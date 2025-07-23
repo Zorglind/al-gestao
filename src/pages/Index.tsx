@@ -1,13 +1,24 @@
 import { useState } from "react";
+import { Routes, Route } from "react-router-dom";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import LoginPage from "@/components/LoginPage";
-import Dashboard from "@/components/Dashboard";
+import DashboardPage from "@/pages/DashboardPage";
+import Profissionais from "@/pages/Profissionais";
+import Clientes from "@/pages/Clientes";
+import Agenda from "@/pages/Agenda";
+import Servicos from "@/pages/Servicos";
+import Produtos from "@/pages/Produtos";
+import logoImage from "@/assets/sol-lima-logo.jpg";
+import { LogOut, Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [professionalName, setProfessionalName] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // Changed to true for development
+  const [professionalName, setProfessionalName] = useState("Ana Silva");
 
-  const handleLogin = (name: string) => {
-    setProfessionalName(name);
+  const handleLogin = (professional: string) => {
+    setProfessionalName(professional);
     setIsLoggedIn(true);
   };
 
@@ -20,7 +31,71 @@ const Index = () => {
     return <LoginPage onLogin={handleLogin} />;
   }
 
-  return <Dashboard professionalName={professionalName} onLogout={handleLogout} />;
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-secondary/20 to-background">
+        <AppSidebar />
+        
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <header className="bg-white/90 backdrop-blur-sm border-b border-border sticky top-0 z-40">
+            <div className="flex items-center justify-between px-6 py-4">
+              <div className="flex items-center space-x-4">
+                <SidebarTrigger />
+                <div className="flex items-center space-x-3">
+                  <img 
+                    src={logoImage} 
+                    alt="Sol Lima" 
+                    className="w-10 h-5 object-contain"
+                  />
+                  <div>
+                    <h1 className="text-lg font-bold text-primary">Sol Lima Tricologia</h1>
+                    <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-primary">Olá, {professionalName}!</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date().toLocaleDateString('pt-BR', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-4 w-4" />
+                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs"></span>
+                </Button>
+                <Button variant="outline" onClick={handleLogout} size="sm">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sair
+                </Button>
+              </div>
+            </div>
+          </header>
+
+          {/* Main Content */}
+          <main className="flex-1 p-6">
+            <Routes>
+              <Route path="/" element={<DashboardPage professionalName={professionalName} onLogout={handleLogout} />} />
+              <Route path="/profissionais" element={<Profissionais />} />
+              <Route path="/clientes" element={<Clientes />} />
+              <Route path="/agenda" element={<Agenda />} />
+              <Route path="/servicos" element={<Servicos />} />
+              <Route path="/produtos" element={<Produtos />} />
+              <Route path="/anamnese" element={<div className="text-center text-muted-foreground">Anamnese - Em desenvolvimento</div>} />
+              <Route path="/exportacoes" element={<div className="text-center text-muted-foreground">Exportações - Em desenvolvimento</div>} />
+            </Routes>
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
 };
 
 export default Index;
