@@ -2,39 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Sol Lima Tricologia Design System
+Cores da marca: Verde escuro #223321, Rosa claro #FADCE5, Dourado #C6A04B/#D4AF37
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    /* Sol Lima Brand Colors */
+    --sol-lima-green: 118 26% 13%;      /* #223321 */
+    --sol-lima-pink: 330 67% 93%;       /* #FADCE5 */
+    --sol-lima-gold: 43 53% 53%;        /* #C6A04B */
+    --sol-lima-gold-alt: 48 69% 53%;    /* #D4AF37 */
+    
+    /* Background & Surface */
+    --background: 330 67% 98%;           /* Muito suave rosa */
+    --foreground: 118 26% 13%;           /* Verde escuro para texto */
+    
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 118 26% 13%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
+    --popover-foreground: 118 26% 13%;
+    
+    /* Primary - Verde Sol Lima */
+    --primary: 118 26% 13%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary - Rosa Sol Lima */
+    --secondary: 330 67% 93%;
+    --secondary-foreground: 118 26% 13%;
+    
+    /* Accent - Dourado Sol Lima */
+    --accent: 43 53% 53%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Gold variant for special elements */
+    --gold: 48 69% 53%;
+    --gold-foreground: 118 26% 13%;
+    
+    /* Muted colors */
+    --muted: 330 67% 96%;
+    --muted-foreground: 118 15% 35%;
+    
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Borders and inputs with pink tint */
+    --border: 330 30% 90%;
+    --input: 330 30% 95%;
+    --ring: 118 26% 13%;
+    
+    /* Sol Lima specific gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--sol-lima-green)), hsl(var(--sol-lima-green) / 0.8));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--sol-lima-pink)), hsl(var(--sol-lima-pink) / 0.6));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--sol-lima-gold)), hsl(var(--sol-lima-gold-alt)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--sol-lima-green)), hsl(var(--sol-lima-gold) / 0.3));
+    
+    /* Elegant shadows */
+    --shadow-elegant: 0 10px 30px -10px hsl(var(--sol-lima-green) / 0.2);
+    --shadow-gold: 0 8px 25px -8px hsl(var(--sol-lima-gold) / 0.3);
+    --shadow-pink: 0 4px 15px -4px hsl(var(--sol-lima-pink) / 0.4);
+    
+    /* Smooth transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
     --radius: 0.5rem;
 

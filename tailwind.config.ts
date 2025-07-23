@@ -52,6 +52,17 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// Sol Lima brand colors
+				'sol-lima': {
+					green: 'hsl(var(--sol-lima-green))',
+					pink: 'hsl(var(--sol-lima-pink))',
+					gold: 'hsl(var(--sol-lima-gold))',
+					'gold-alt': 'hsl(var(--sol-lima-gold-alt))'
+				},
+				gold: {
+					DEFAULT: 'hsl(var(--gold))',
+					foreground: 'hsl(var(--gold-foreground))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
