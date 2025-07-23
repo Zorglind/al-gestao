@@ -15,22 +15,22 @@ Cores da marca: Verde escuro #223321, Rosa claro #FADCE5, Dourado #C6A04B/#D4AF3
     --sol-lima-gold-alt: 48 69% 53%;    /* #D4AF37 */
     
     /* Background & Surface */
-    --background: 330 67% 98%;           /* Muito suave rosa */
-    --foreground: 118 26% 13%;           /* Verde escuro para texto */
+    --background: 0 0% 100%;             /* Branco limpo */
+    --foreground: 143 79% 12%;           /* Verde escuro #024F35 para texto */
     
     --card: 0 0% 100%;
-    --card-foreground: 118 26% 13%;
+    --card-foreground: 143 79% 12%;
     
     --popover: 0 0% 100%;
-    --popover-foreground: 118 26% 13%;
+    --popover-foreground: 143 79% 12%;
     
     /* Primary - Verde Sol Lima */
-    --primary: 118 26% 13%;
+    --primary: 143 79% 12%;
     --primary-foreground: 0 0% 100%;
     
     /* Secondary - Rosa Sol Lima */
     --secondary: 330 67% 93%;
-    --secondary-foreground: 118 26% 13%;
+    --secondary-foreground: 143 79% 12%;
     
     /* Accent - Dourado Sol Lima */
     --accent: 43 53% 53%;
@@ -38,11 +38,11 @@ Cores da marca: Verde escuro #223321, Rosa claro #FADCE5, Dourado #C6A04B/#D4AF3
     
     /* Gold variant for special elements */
     --gold: 48 69% 53%;
-    --gold-foreground: 118 26% 13%;
+    --gold-foreground: 143 79% 12%;
     
     /* Muted colors */
     --muted: 330 67% 96%;
-    --muted-foreground: 118 15% 35%;
+    --muted-foreground: 143 50% 25%;
     
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
@@ -50,7 +50,7 @@ Cores da marca: Verde escuro #223321, Rosa claro #FADCE5, Dourado #C6A04B/#D4AF3
     /* Borders and inputs with pink tint */
     --border: 330 30% 90%;
     --input: 330 30% 95%;
-    --ring: 118 26% 13%;
+    --ring: 143 79% 12%;
     
     /* Sol Lima specific gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--sol-lima-green)), hsl(var(--sol-lima-green) / 0.8));

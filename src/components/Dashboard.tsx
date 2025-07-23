@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Calendar, 
   Users, 
@@ -14,7 +16,11 @@ import {
   Scissors,
   TrendingUp,
   CalendarDays,
-  UserPlus
+  UserPlus,
+  User,
+  Target,
+  Edit3,
+  X
 } from "lucide-react";
 import logoImage from "@/assets/sol-lima-logo.jpg";
 
@@ -24,29 +30,47 @@ interface DashboardProps {
 }
 
 const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [busca, setBusca] = useState("");
+  const [lembretes, setLembretes] = useState([
+    "Parabéns! Você bateu sua meta do mês!",
+    "Lembre-se: Agenda da Ana às 14h hoje",
+    "Novo produto chegou no estoque"
+  ]);
+  const [novoLembrete, setNovoLembrete] = useState("");
+  const [currentTime] = useState(new Date());
 
   // Dados mockados para demonstração
-  const todayAppointments = [
-    { id: 1, client: "Maria Silva", time: "09:00", service: "Hidratação Intensiva", status: "confirmado" },
-    { id: 2, client: "Ana Santos", time: "11:30", service: "Corte + Finalização", status: "em-andamento" },
-    { id: 3, client: "Beatriz Costa", time: "14:00", service: "Cronograma Capilar", status: "agendado" },
-    { id: 4, client: "Julia Oliveira", time: "16:30", service: "Tratamento Antiqueda", status: "agendado" },
+  const agendamentosHoje = [
+    { id: 1, cliente: "Maria Silva", horario: "09:00", servico: "Hidratação Intensiva", status: "confirmado" },
+    { id: 2, cliente: "Ana Santos", horario: "11:30", servico: "Corte + Finalização", status: "em-andamento" },
+    { id: 3, cliente: "Beatriz Costa", horario: "14:00", servico: "Cronograma Capilar", status: "agendado" },
+    { id: 4, cliente: "Julia Oliveira", horario: "16:30", servico: "Tratamento Antiqueda", status: "agendado" },
   ];
 
   const stats = {
-    todayAppointments: 4,
-    monthlyClients: 67,
-    pendingConfirmations: 3,
-    monthlyRevenue: 8500
+    agendamentosHoje: 4,
+    clientesMes: 67,
+    confirmacoesaPendentes: 3,
+    faturamentoMensal: 8500
+  };
+
+  const adicionarLembrete = () => {
+    if (novoLembrete.trim()) {
+      setLembretes([...lembretes, novoLembrete]);
+      setNovoLembrete("");
+    }
+  };
+
+  const removerLembrete = (index: number) => {
+    setLembretes(lembretes.filter((_, i) => i !== index));
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "confirmado": return "bg-green-100 text-green-800";
-      case "em-andamento": return "bg-blue-100 text-blue-800";
-      case "agendado": return "bg-yellow-100 text-yellow-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "confirmado": return "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
+      case "em-andamento": return "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100";
+      case "agendado": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100";
     }
   };
 
@@ -60,9 +84,9 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-sol-lima-pink/20 to-background">
-      {/* Header */}
-      <header className="bg-white/90 backdrop-blur-sm border-b border-sol-lima-pink/30 sticky top-0 z-40">
+    <div className="min-h-screen bg-background">
+      {/* Header fixo com botão sair */}
+      <header className="bg-white border-b border-border sticky top-0 z-40 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <img 
@@ -78,7 +102,10 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
           
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className="text-sm font-medium text-primary">Olá, {professionalName}!</p>
+              <p className="text-sm font-medium text-primary flex items-center gap-2">
+                <User className="h-4 w-4" />
+                {professionalName}
+              </p>
               <p className="text-xs text-muted-foreground">
                 {currentTime.toLocaleDateString('pt-BR', { 
                   weekday: 'long', 
@@ -92,8 +119,8 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
               <Bell className="h-4 w-4" />
               <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs"></span>
             </Button>
-            <Button variant="outline" onClick={onLogout} size="sm">
-              <LogOut className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={onLogout} className="flex items-center gap-2">
+              <LogOut className="h-4 w-4" />
               Sair
             </Button>
           </div>
@@ -101,27 +128,29 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
       </header>
 
       <div className="container mx-auto px-4 py-6">
-        {/* Quick Actions */}
+        {/* Botões de Ação Rápida do Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Button variant="gold" className="h-16 flex-col">
-            <UserPlus className="h-5 w-5 mb-1" />
-            Novo Cliente
+          <Button variant="default" className="h-16 flex-col space-y-1 text-primary-foreground">
+            <UserPlus className="h-5 w-5" />
+            <span className="text-sm font-medium">Novo Cliente</span>
           </Button>
-          <Button variant="elegant" className="h-16 flex-col">
-            <CalendarDays className="h-5 w-5 mb-1" />
-            Agendar
+          <Button variant="default" className="h-16 flex-col space-y-1 text-primary-foreground">
+            <CalendarDays className="h-5 w-5" />
+            <span className="text-sm font-medium">Agendar</span>
           </Button>
-          <Button variant="soft" className="h-16 flex-col">
-            <Search className="h-5 w-5 mb-1" />
-            Buscar Cliente
-          </Button>
-          <Button variant="gold-outline" className="h-16 flex-col">
-            <Scissors className="h-5 w-5 mb-1" />
-            Serviços
+          <Card className="h-16 flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex flex-col items-center space-y-1">
+              <Search className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium text-primary">Buscar Cliente</span>
+            </div>
+          </Card>
+          <Button variant="outline" className="h-16 flex-col space-y-1">
+            <Scissors className="h-5 w-5" />
+            <span className="text-sm font-medium">Serviços</span>
           </Button>
         </div>
 
-        {/* Stats Cards */}
+        {/* Cards de Resumo */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -129,7 +158,7 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.todayAppointments}</div>
+              <div className="text-2xl font-bold text-primary">{stats.agendamentosHoje}</div>
               <p className="text-xs text-muted-foreground">
                 +2 desde ontem
               </p>
@@ -142,7 +171,7 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.monthlyClients}</div>
+              <div className="text-2xl font-bold text-primary">{stats.clientesMes}</div>
               <p className="text-xs text-muted-foreground">
                 +12% vs mês anterior
               </p>
@@ -155,7 +184,7 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.pendingConfirmations}</div>
+              <div className="text-2xl font-bold text-amber-600">{stats.confirmacoesaPendentes}</div>
               <p className="text-xs text-muted-foreground">
                 Requer atenção
               </p>
@@ -168,8 +197,8 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-sol-lima-gold">
-                R$ {stats.monthlyRevenue.toLocaleString('pt-BR')}
+              <div className="text-2xl font-bold text-accent">
+                R$ {stats.faturamentoMensal.toLocaleString('pt-BR')}
               </div>
               <p className="text-xs text-muted-foreground">
                 +15% vs mês anterior
@@ -179,12 +208,12 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Today's Appointments */}
+          {/* Agendamentos do Dia */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Calendar className="h-5 w-5 mr-2 text-primary" />
-                Agendamentos de Hoje
+                Agendamentos do Dia
               </CardTitle>
               <CardDescription>
                 Sua agenda para {currentTime.toLocaleDateString('pt-BR')}
@@ -192,22 +221,22 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {todayAppointments.map((appointment) => (
+                {agendamentosHoje.map((agendamento) => (
                   <div 
-                    key={appointment.id} 
-                    className="flex items-center justify-between p-4 border border-sol-lima-pink/30 rounded-lg hover:bg-sol-lima-pink/10 transition-colors"
+                    key={agendamento.id} 
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex items-center space-x-4">
                       <div className="text-center">
-                        <div className="text-lg font-bold text-primary">{appointment.time}</div>
+                        <div className="text-lg font-bold text-primary">{agendamento.horario}</div>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-foreground">{appointment.client}</h4>
-                        <p className="text-sm text-muted-foreground">{appointment.service}</p>
+                        <h4 className="font-semibold text-foreground">{agendamento.cliente}</h4>
+                        <p className="text-sm text-muted-foreground">{agendamento.servico}</p>
                       </div>
                     </div>
-                    <Badge className={getStatusColor(appointment.status)}>
-                      {getStatusText(appointment.status)}
+                    <Badge className={getStatusColor(agendamento.status)}>
+                      {getStatusText(agendamento.status)}
                     </Badge>
                   </div>
                 ))}
@@ -215,33 +244,73 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
             </CardContent>
           </Card>
 
-          {/* Quick Info */}
+          {/* Informações Rápidas */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Star className="h-5 w-5 mr-2 text-sol-lima-gold" />
+                <Target className="h-5 w-5 mr-2 text-primary" />
                 Informações Rápidas
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-gradient-to-r from-sol-lima-pink/20 to-sol-lima-gold/20 p-4 rounded-lg">
-                <h4 className="font-semibold text-primary mb-2">🎉 Parabéns!</h4>
+              {/* Mensagem de Status */}
+              <div className="bg-primary/10 border border-primary/20 p-4 rounded-lg">
+                <h4 className="font-semibold text-primary mb-2 flex items-center gap-2">
+                  <Star className="h-4 w-4" />
+                  Parabéns!
+                </h4>
                 <p className="text-sm text-muted-foreground">
-                  Você superou sua meta mensal de atendimentos!
+                  Você bateu sua meta mensal de atendimentos!
                 </p>
               </div>
               
-              <div className="space-y-2">
-                <h4 className="font-semibold text-foreground">Lembretes</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Confirmar agendamento de Ana Santos (11h30)</li>
-                  <li>• Atualizar ficha de Maria Silva</li>
-                  <li>• Revisar estoque de produtos</li>
-                </ul>
+              {/* Lista de Lembretes Editável */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-foreground">Lembretes</h4>
+                  <Button variant="ghost" size="sm">
+                    <Edit3 className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div className="space-y-2">
+                  {lembretes.map((lembrete, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
+                      <span className="text-muted-foreground">{lembrete}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removerLembrete(index)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Adicionar novo lembrete */}
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="Adicionar novo lembrete..."
+                    value={novoLembrete}
+                    onChange={(e) => setNovoLembrete(e.target.value)}
+                    className="min-h-[60px] text-sm"
+                  />
+                  <Button 
+                    onClick={adicionarLembrete} 
+                    size="sm" 
+                    className="w-full"
+                    disabled={!novoLembrete.trim()}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Lembrete
+                  </Button>
+                </div>
               </div>
 
-              <Button variant="soft" className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
+              <Button variant="outline" className="w-full">
+                <Bell className="h-4 w-4 mr-2" />
                 Ver Todas as Notificações
               </Button>
             </CardContent>
