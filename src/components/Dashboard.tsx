@@ -4,6 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Calendar, 
   Users, 
@@ -38,6 +41,20 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
   ]);
   const [novoLembrete, setNovoLembrete] = useState("");
   const [currentTime] = useState(new Date());
+  
+  // Estados para modais
+  const [novoCliente, setNovoCliente] = useState({
+    nome: "",
+    telefone: "",
+    email: "",
+    profissao: ""
+  });
+  const [novoAgendamento, setNovoAgendamento] = useState({
+    cliente: "",
+    servico: "",
+    data: "",
+    horario: ""
+  });
 
   // Dados mockados para demonstração
   const agendamentosHoje = [
@@ -63,6 +80,16 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
 
   const removerLembrete = (index: number) => {
     setLembretes(lembretes.filter((_, i) => i !== index));
+  };
+
+  const cadastrarCliente = () => {
+    console.log("Novo cliente:", novoCliente);
+    setNovoCliente({ nome: "", telefone: "", email: "", profissao: "" });
+  };
+
+  const criarAgendamento = () => {
+    console.log("Novo agendamento:", novoAgendamento);
+    setNovoAgendamento({ cliente: "", servico: "", data: "", horario: "" });
   };
 
   const getStatusColor = (status: string) => {
@@ -130,20 +157,158 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
       <div className="container mx-auto px-4 py-6">
         {/* Botões de Ação Rápida do Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Button variant="default" className="h-16 flex-col space-y-1 text-primary-foreground">
-            <UserPlus className="h-5 w-5" />
-            <span className="text-sm font-medium">Novo Cliente</span>
-          </Button>
-          <Button variant="default" className="h-16 flex-col space-y-1 text-primary-foreground">
-            <CalendarDays className="h-5 w-5" />
-            <span className="text-sm font-medium">Agendar</span>
-          </Button>
-          <Card className="h-16 flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
-            <div className="flex flex-col items-center space-y-1">
-              <Search className="h-5 w-5 text-primary" />
-              <span className="text-sm font-medium text-primary">Buscar Cliente</span>
-            </div>
-          </Card>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="default" className="h-16 flex-col space-y-1 text-primary-foreground">
+                <UserPlus className="h-5 w-5" />
+                <span className="text-sm font-medium">Novo Cliente</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nome">Nome Completo</Label>
+                  <Input
+                    id="nome"
+                    placeholder="Digite o nome completo"
+                    value={novoCliente.nome}
+                    onChange={(e) => setNovoCliente({...novoCliente, nome: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="telefone">Telefone</Label>
+                  <Input
+                    id="telefone"
+                    placeholder="(11) 99999-9999"
+                    value={novoCliente.telefone}
+                    onChange={(e) => setNovoCliente({...novoCliente, telefone: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="email@exemplo.com"
+                    value={novoCliente.email}
+                    onChange={(e) => setNovoCliente({...novoCliente, email: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="profissao">Profissão</Label>
+                  <Input
+                    id="profissao"
+                    placeholder="Profissão do cliente"
+                    value={novoCliente.profissao}
+                    onChange={(e) => setNovoCliente({...novoCliente, profissao: e.target.value})}
+                  />
+                </div>
+                <Button onClick={cadastrarCliente} className="w-full">
+                  Cadastrar Cliente
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="default" className="h-16 flex-col space-y-1 text-primary-foreground">
+                <CalendarDays className="h-5 w-5" />
+                <span className="text-sm font-medium">Agendar</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Novo Agendamento</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cliente">Cliente</Label>
+                  <Select value={novoAgendamento.cliente} onValueChange={(value) => setNovoAgendamento({...novoAgendamento, cliente: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o cliente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="maria">Maria Silva</SelectItem>
+                      <SelectItem value="ana">Ana Santos</SelectItem>
+                      <SelectItem value="beatriz">Beatriz Costa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="servico">Serviço</Label>
+                  <Select value={novoAgendamento.servico} onValueChange={(value) => setNovoAgendamento({...novoAgendamento, servico: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o serviço" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hidratacao">Hidratação Intensiva</SelectItem>
+                      <SelectItem value="corte">Corte + Finalização</SelectItem>
+                      <SelectItem value="cronograma">Cronograma Capilar</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="data">Data</Label>
+                    <Input
+                      id="data"
+                      type="date"
+                      value={novoAgendamento.data}
+                      onChange={(e) => setNovoAgendamento({...novoAgendamento, data: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="horario">Horário</Label>
+                    <Input
+                      id="horario"
+                      type="time"
+                      value={novoAgendamento.horario}
+                      onChange={(e) => setNovoAgendamento({...novoAgendamento, horario: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <Button onClick={criarAgendamento} className="w-full">
+                  Criar Agendamento
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Card className="h-16 flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex flex-col items-center space-y-1">
+                  <Search className="h-5 w-5 text-primary" />
+                  <span className="text-sm font-medium text-primary">Buscar Cliente</span>
+                </div>
+              </Card>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Buscar Cliente</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="busca">Digite o nome do cliente</Label>
+                  <Input
+                    id="busca"
+                    placeholder="Nome, telefone ou e-mail"
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                  />
+                </div>
+                <Button className="w-full">
+                  <Search className="h-4 w-4 mr-2" />
+                  Buscar Cliente
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Button variant="outline" className="h-16 flex-col space-y-1">
             <Scissors className="h-5 w-5" />
             <span className="text-sm font-medium">Serviços</span>

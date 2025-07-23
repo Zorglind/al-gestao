@@ -7,7 +7,9 @@ import {
   Package, 
   FileText, 
   Download, 
-  BarChart3 
+  BarChart3,
+  DollarSign,
+  User
 } from "lucide-react";
 import {
   Sidebar,
@@ -30,7 +32,9 @@ const menuItems = [
   { title: "Serviços", url: "/servicos", icon: Scissors },
   { title: "Produtos", url: "/produtos", icon: Package },
   { title: "Anamnese", url: "/anamnese", icon: FileText },
+  { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Exportações", url: "/exportacoes", icon: Download },
+  { title: "Meu Perfil", url: "/meu-perfil", icon: User },
 ];
 
 export function AppSidebar() {
@@ -46,17 +50,17 @@ export function AppSidebar() {
 
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive 
-      ? "bg-primary text-primary-foreground font-medium" 
-      : "hover:bg-muted text-muted-foreground hover:text-foreground";
+      ? "bg-primary text-white font-medium" 
+      : "hover:bg-slate-800 text-gray-300 hover:text-white";
 
   return (
     <Sidebar
       className={collapsed ? "w-14" : "w-64"}
       collapsible="icon"
     >
-      <SidebarContent className="bg-background border-r border-border">
+      <SidebarContent className="bg-slate-900 border-r border-slate-700">
         {/* Logo */}
-        <div className="p-4 border-b border-border">
+        <div className="p-4 border-b border-slate-700">
           <div className="flex items-center space-x-3">
             <img 
               src={logoImage} 
@@ -65,15 +69,15 @@ export function AppSidebar() {
             />
             {!collapsed && (
               <div>
-                <h2 className="text-lg font-bold text-primary">Sol Lima</h2>
-                <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
+                <h2 className="text-lg font-bold text-white">Sol Lima</h2>
+                <p className="text-xs text-gray-300">Sistema de Gestão</p>
               </div>
             )}
           </div>
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-gray-300">Menu Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (

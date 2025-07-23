@@ -9,12 +9,16 @@ import Clientes from "@/pages/Clientes";
 import Agenda from "@/pages/Agenda";
 import Servicos from "@/pages/Servicos";
 import Produtos from "@/pages/Produtos";
+import Anamnese from "@/pages/Anamnese";
+import Exportacoes from "@/pages/Exportacoes";
+import MeuPerfil from "@/pages/MeuPerfil";
+import Financeiro from "@/pages/Financeiro";
 import logoImage from "@/assets/sol-lima-logo.jpg";
 import { LogOut, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Changed to true for development
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Sistema de login ativado
   const [professionalName, setProfessionalName] = useState("Ana Silva");
 
   const handleLogin = (professional: string) => {
@@ -88,8 +92,10 @@ const Index = () => {
               <Route path="/agenda" element={<Agenda />} />
               <Route path="/servicos" element={<Servicos />} />
               <Route path="/produtos" element={<Produtos />} />
-              <Route path="/anamnese" element={<div className="text-center text-muted-foreground">Anamnese - Em desenvolvimento</div>} />
-              <Route path="/exportacoes" element={<div className="text-center text-muted-foreground">Exportações - Em desenvolvimento</div>} />
+              <Route path="/anamnese" element={<Anamnese />} />
+              <Route path="/financeiro" element={<Financeiro />} />
+              <Route path="/exportacoes" element={<Exportacoes />} />
+              <Route path="/meu-perfil" element={<MeuPerfil />} />
             </Routes>
           </main>
         </div>
