@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,11 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Search, Mail, Key, Users } from "lucide-react";
+import { AddProfessionalModal } from "@/components/modals/AddProfessionalModal";
+import { PermissionsModal } from "@/components/modals/PermissionsModal";
+import { useToast } from "@/hooks/use-toast";
 
 const Profissionais = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
+  const [selectedProfessional, setSelectedProfessional] = useState("");
+  const { toast } = useToast();
 
-  const profissionais = [
+  const [profissionais, setProfissionais] = useState([
     { 
       id: 1, 
       nome: "Ana Silva", 
@@ -31,12 +39,35 @@ const Profissionais = () => {
       especialidade: "Esteticista", 
       status: "Inativo" 
     },
-  ];
+  ]);
 
   const filteredProfissionais = profissionais.filter(prof =>
     prof.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     prof.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleOpenPermissions = (professionalName: string) => {
+    setSelectedProfessional(professionalName);
+    setIsPermissionsModalOpen(true);
+  };
+
+  const toggleProfessionalStatus = (id: number) => {
+    setProfissionais(prev => 
+      prev.map(prof => 
+        prof.id === id 
+          ? { ...prof, status: prof.status === "Ativo" ? "Inativo" : "Ativo" }
+          : prof
+      )
+    );
+
+    const professional = profissionais.find(p => p.id === id);
+    const newStatus = professional?.status === "Ativo" ? "Inativo" : "Ativo";
+    
+    toast({
+      title: "Status atualizado!",
+      description: `${professional?.nome} está agora ${newStatus}.`,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -46,7 +77,11 @@ const Profissionais = () => {
           <h1 className="text-3xl font-bold text-primary">Profissionais</h1>
           <p className="text-muted-foreground">Gerencie a equipe Sol Lima</p>
         </div>
-        <Button variant="default" className="flex items-center gap-2">
+        <Button 
+          variant="default" 
+          className="flex items-center gap-2"
+          onClick={() => setIsAddModalOpen(true)}
+        >
           <UserPlus className="h-4 w-4" />
           Adicionar Profissional
         </Button>
@@ -99,10 +134,16 @@ const Profissionais = () => {
                 <div className="flex items-center gap-2">
                   <Badge 
                     variant={profissional.status === "Ativo" ? "default" : "secondary"}
+                    className="cursor-pointer"
+                    onClick={() => toggleProfessionalStatus(profissional.id)}
                   >
                     {profissional.status}
                   </Badge>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleOpenPermissions(profissional.nome)}
+                  >
                     <Key className="h-4 w-4 mr-2" />
                     Permissões
                   </Button>
@@ -121,6 +162,18 @@ const Profissionais = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modais */}
+      <AddProfessionalModal 
+        open={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+      />
+      
+      <PermissionsModal 
+        open={isPermissionsModalOpen} 
+        onClose={() => setIsPermissionsModalOpen(false)}
+        professionalName={selectedProfessional}
+      />
     </div>
   );
 };

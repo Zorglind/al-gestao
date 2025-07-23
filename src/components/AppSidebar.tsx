@@ -1,3 +1,4 @@
+
 import { NavLink, useLocation } from "react-router-dom";
 import { 
   Users, 
@@ -51,7 +52,7 @@ export function AppSidebar() {
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive 
       ? "bg-primary text-white font-medium" 
-      : "hover:bg-slate-800 text-gray-300 hover:text-white";
+      : "hover:bg-slate-700 text-slate-200 hover:text-white";
 
   return (
     <Sidebar
@@ -70,14 +71,14 @@ export function AppSidebar() {
             {!collapsed && (
               <div>
                 <h2 className="text-lg font-bold text-white">Sol Lima</h2>
-                <p className="text-xs text-gray-300">Sistema de Gestão</p>
+                <p className="text-xs text-slate-300">Sistema de Gestão</p>
               </div>
             )}
           </div>
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-gray-300">Menu Principal</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-slate-300">Menu Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
