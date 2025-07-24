@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Download, FileText, Calendar, Users, Clock, Filter } from "lucide-react";
 import { ExportModal } from "@/components/modals/ExportModal";
+import { useToast } from "@/hooks/use-toast";
 
 const Exportacoes = () => {
+  const { toast } = useToast();
   const [showExportModal, setShowExportModal] = useState(false);
   const [tipoExportacao, setTipoExportacao] = useState("");
   const [periodo, setPeriodo] = useState("");
@@ -49,6 +51,39 @@ const Exportacoes = () => {
     { value: "servicos", label: "Relatório de Serviços" },
     { value: "financeiro", label: "Relatório Financeiro" },
   ];
+
+  const handleGerarExportacao = () => {
+    if (!tipoExportacao) {
+      toast({
+        title: "Erro!",
+        description: "Selecione um tipo de exportação.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!periodo) {
+      toast({
+        title: "Erro!",
+        description: "Selecione um período.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log("Gerar exportação:", { tipoExportacao, periodo, dataInicio, dataFim });
+    toast({
+      title: "Exportação iniciada!",
+      description: `Gerando exportação de ${tiposExportacao.find(t => t.value === tipoExportacao)?.label}. Você será notificado quando estiver pronta.`,
+    });
+  };
+
+  const handleDownload = (arquivo: string) => {
+    console.log("Download:", arquivo);
+    toast({
+      title: "Download iniciado!",
+      description: `${arquivo} está sendo baixado.`,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -131,7 +166,7 @@ const Exportacoes = () => {
           </div>
           
           <div className="flex justify-end mt-6">
-            <Button variant="default" className="flex items-center gap-2">
+            <Button variant="default" className="flex items-center gap-2" onClick={handleGerarExportacao}>
               <Download className="h-4 w-4" />
               Gerar Exportação
             </Button>
@@ -213,7 +248,7 @@ const Exportacoes = () => {
                     {exportacao.status}
                   </Badge>
                   {exportacao.status === "Concluído" && (
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleDownload(exportacao.arquivo)}>
                       <Download className="h-4 w-4 mr-2" />
                       Baixar
                     </Button>

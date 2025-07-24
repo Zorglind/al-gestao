@@ -5,10 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Scissors, Plus, Clock, DollarSign, Tag } from "lucide-react";
 import { AddServiceModal } from "@/components/modals/AddServiceModal";
+import { EditServiceModal } from "@/components/modals/EditServiceModal";
 import { useToast } from "@/hooks/use-toast";
 
 const Servicos = () => {
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+  const [showEditServiceModal, setShowEditServiceModal] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
   const { toast } = useToast();
   const [servicos, setServicos] = useState([
     {
@@ -164,7 +167,10 @@ const Servicos = () => {
                       {servico.ativo ? 'Ativo' : 'Inativo'}
                     </span>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => toast({ title: "Editar Serviço", description: "Modal de edição será implementado em breve." })}>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    setSelectedService(servico);
+                    setShowEditServiceModal(true);
+                  }}>
                     Editar
                   </Button>
                 </div>
@@ -177,6 +183,12 @@ const Servicos = () => {
       <AddServiceModal 
         open={showAddServiceModal} 
         onClose={() => setShowAddServiceModal(false)} 
+      />
+      
+      <EditServiceModal 
+        open={showEditServiceModal} 
+        onClose={() => setShowEditServiceModal(false)}
+        service={selectedService}
       />
     </div>
   );

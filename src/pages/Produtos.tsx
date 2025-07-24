@@ -5,11 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Package, Plus, Search, Tag, Package2 } from "lucide-react";
 import { AddProductModal } from "@/components/modals/AddProductModal";
+import { EditProductModal } from "@/components/modals/EditProductModal";
 import { useToast } from "@/hooks/use-toast";
 
 const Produtos = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [showEditProductModal, setShowEditProductModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const { toast } = useToast();
 
   const produtos = [
@@ -180,7 +183,10 @@ const Produtos = () => {
                   </div>
                 </div>
                 
-                <Button variant="outline" className="w-full" onClick={() => toast({ title: "Editar Produto", description: "Modal de edição será implementado em breve." })}>
+                <Button variant="outline" className="w-full" onClick={() => {
+                  setSelectedProduct(produto);
+                  setShowEditProductModal(true);
+                }}>
                   Editar Produto
                 </Button>
               </div>
@@ -201,6 +207,12 @@ const Produtos = () => {
       <AddProductModal 
         open={showAddProductModal} 
         onClose={() => setShowAddProductModal(false)} 
+      />
+      
+      <EditProductModal 
+        open={showEditProductModal} 
+        onClose={() => setShowEditProductModal(false)}
+        product={selectedProduct}
       />
     </div>
   );

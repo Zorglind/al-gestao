@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Building, Phone, Mail, MapPin, Palette, Clock, Upload, Save } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const MeuPerfil = () => {
+  const { toast } = useToast();
   const [tema, setTema] = useState("claro");
   const [notificacoes, setNotificacoes] = useState(true);
   
@@ -46,6 +48,22 @@ const MeuPerfil = () => {
     }));
   };
 
+  const handleSave = () => {
+    console.log("Perfil salvo:", perfil);
+    toast({
+      title: "Perfil atualizado!",
+      description: "Suas informações foram salvas com sucesso.",
+    });
+  };
+
+  const handlePhotoUpload = () => {
+    console.log("Abrir seletor de arquivo");
+    toast({
+      title: "Upload de foto",
+      description: "Funcionalidade de upload será implementada em breve.",
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -54,7 +72,7 @@ const MeuPerfil = () => {
           <h1 className="text-3xl font-bold text-primary">Meu Perfil</h1>
           <p className="text-muted-foreground">Gerencie suas informações pessoais e preferências</p>
         </div>
-        <Button variant="default" className="flex items-center gap-2">
+        <Button variant="default" className="flex items-center gap-2" onClick={handleSave}>
           <Save className="h-4 w-4" />
           Salvar Alterações
         </Button>
@@ -209,7 +227,7 @@ const MeuPerfil = () => {
                 <AvatarImage src="" />
                 <AvatarFallback className="text-lg">AS</AvatarFallback>
               </Avatar>
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handlePhotoUpload}>
                 <Upload className="h-4 w-4 mr-2" />
                 Alterar Foto
               </Button>
