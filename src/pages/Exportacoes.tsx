@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Download, FileText, Calendar, Users, Clock, Filter } from "lucide-react";
+import { ExportModal } from "@/components/modals/ExportModal";
 
 const Exportacoes = () => {
   const [showExportModal, setShowExportModal] = useState(false);

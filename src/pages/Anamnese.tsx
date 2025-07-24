@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileText, Search, Plus, Download, User, Calendar } from "lucide-react";
+import { AddAnamneseModal } from "@/components/modals/AddAnamneseModal";
 
 const Anamnese = () => {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -59,7 +60,7 @@ const Anamnese = () => {
           <h1 className="text-3xl font-bold text-primary">Anamnese</h1>
           <p className="text-muted-foreground">Gerencie fichas de anamnese dos clientes</p>
         </div>
-        <Button variant="default" className="flex items-center gap-2">
+        <Button variant="default" className="flex items-center gap-2" onClick={() => setShowAddModal(true)}>
           <Plus className="h-4 w-4" />
           Nova Ficha
         </Button>

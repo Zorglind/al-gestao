@@ -65,16 +65,27 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
     
     // Simulate login validation
     setTimeout(() => {
-      if (emailOrCpf === "admin@sollima.com" || emailOrCpf === "12345678901") {
-        onLogin(emailOrCpf.includes('@') ? emailOrCpf.split('@')[0] : "Admin");
+      // Usuários de teste disponíveis
+      const testUsers = [
+        { email: "admin@sollima.com", cpf: "12345678901", name: "Ana Silva" },
+        { email: "profissional@sollima.com", cpf: "98765432109", name: "Carlos Santos" },
+        { email: "teste@sollima.com", cpf: "11122233344", name: "Maria Oliveira" }
+      ];
+      
+      const foundUser = testUsers.find(user => 
+        (emailOrCpf === user.email || emailOrCpf === user.cpf) && password === "123456"
+      );
+      
+      if (foundUser) {
+        onLogin(foundUser.name);
         toast({
           title: "Login realizado",
-          description: "Bem-vindo ao sistema Sol Lima!"
+          description: `Bem-vindo ao sistema Sol Lima, ${foundUser.name}!`
         });
       } else {
         toast({
           title: "Erro de autenticação",
-          description: "Usuário ou senha inválidos.",
+          description: "Usuário ou senha inválidos. Use: admin@sollima.com / senha: 123456",
           variant: "destructive"
         });
       }
@@ -369,6 +380,21 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
                     </form>
                   </DialogContent>
                 </Dialog>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Informações de usuários de teste */}
+        <Card className="mt-6 border-blue-200 bg-blue-50">
+          <CardContent className="pt-4">
+            <div className="text-center">
+              <h3 className="text-sm font-semibold text-blue-800 mb-2">👤 Usuários de Teste</h3>
+              <div className="space-y-1 text-xs text-blue-700">
+                <p><strong>Admin:</strong> admin@sollima.com</p>
+                <p><strong>Profissional:</strong> profissional@sollima.com</p>
+                <p><strong>Teste:</strong> teste@sollima.com</p>
+                <p className="mt-2 font-medium">🔑 Senha para todos: <code className="bg-blue-100 px-1 rounded">123456</code></p>
               </div>
             </div>
           </CardContent>

@@ -15,8 +15,12 @@ import {
   Edit,
   Trash2
 } from "lucide-react";
+import { AddFinanceModal } from "@/components/modals/AddFinanceModal";
 
 const Financeiro = () => {
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [showFinanceModal, setShowFinanceModal] = useState(false);
+  const [modalType, setModalType] = useState<"entrada" | "saida">("entrada");
   const [novaEntrada, setNovaEntrada] = useState({
     cliente: "",
     servico: "",
@@ -188,7 +192,10 @@ const Financeiro = () => {
                   />
                 </div>
               </div>
-              <Button onClick={adicionarEntrada} className="mt-4">
+              <Button onClick={() => {
+                setModalType("entrada");
+                setShowFinanceModal(true);
+              }} className="mt-4">
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar Entrada
               </Button>
@@ -300,7 +307,10 @@ const Financeiro = () => {
                   />
                 </div>
               </div>
-              <Button onClick={adicionarSaida} className="mt-4">
+              <Button onClick={() => {
+                setModalType("saida");
+                setShowFinanceModal(true);
+              }} className="mt-4">
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar Saída
               </Button>
@@ -353,6 +363,12 @@ const Financeiro = () => {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <AddFinanceModal 
+        open={showFinanceModal} 
+        onClose={() => setShowFinanceModal(false)}
+        type={modalType}
+      />
     </div>
   );
 };
