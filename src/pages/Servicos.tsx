@@ -4,8 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Scissors, Plus, Clock, DollarSign, Tag } from "lucide-react";
+import { AddServiceModal } from "@/components/modals/AddServiceModal";
+import { useToast } from "@/hooks/use-toast";
 
 const Servicos = () => {
+  const [showAddServiceModal, setShowAddServiceModal] = useState(false);
+  const { toast } = useToast();
   const [servicos, setServicos] = useState([
     {
       id: 1,
@@ -81,7 +85,7 @@ const Servicos = () => {
           <h1 className="text-3xl font-bold text-primary">Serviços</h1>
           <p className="text-muted-foreground">Gerencie o catálogo de serviços Sol Lima</p>
         </div>
-        <Button variant="default" className="flex items-center gap-2">
+        <Button variant="default" className="flex items-center gap-2" onClick={() => setShowAddServiceModal(true)}>
           <Plus className="h-4 w-4" />
           Novo Serviço
         </Button>
@@ -160,7 +164,7 @@ const Servicos = () => {
                       {servico.ativo ? 'Ativo' : 'Inativo'}
                     </span>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => toast({ title: "Editar Serviço", description: "Modal de edição será implementado em breve." })}>
                     Editar
                   </Button>
                 </div>
@@ -169,6 +173,11 @@ const Servicos = () => {
           </Card>
         ))}
       </div>
+
+      <AddServiceModal 
+        open={showAddServiceModal} 
+        onClose={() => setShowAddServiceModal(false)} 
+      />
     </div>
   );
 };

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, FileText, Calendar, Users, Clock, Filter } from "lucide-react";
 
 const Exportacoes = () => {
+  const [showExportModal, setShowExportModal] = useState(false);
   const [tipoExportacao, setTipoExportacao] = useState("");
   const [periodo, setPeriodo] = useState("");
   const [dataInicio, setDataInicio] = useState("");

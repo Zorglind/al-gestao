@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Search, Plus, Download, User, Calendar } from "lucide-react";
 
 const Anamnese = () => {
+  const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClient, setSelectedClient] = useState("");
 
@@ -184,6 +185,8 @@ const Anamnese = () => {
           </CardContent>
         </Card>
       )}
+
+      <AddAnamneseModal open={showAddModal} onClose={() => setShowAddModal(false)} />
     </div>
   );
 };

@@ -4,9 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Search, Phone, Mail, Upload, MessageCircle, Download } from "lucide-react";
+import { AddClientModal } from "@/components/modals/AddClientModal";
+import { useToast } from "@/hooks/use-toast";
 
 const Clientes = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const { toast } = useToast();
 
   const clientes = [
     { 
@@ -44,6 +48,26 @@ const Clientes = () => {
     cliente.profissao.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleImportExcel = () => {
+    toast({
+      title: "Importar Excel",
+      description: "Funcionalidade de importação será implementada em breve.",
+    });
+  };
+
+  const handleWhatsApp = (cliente: any) => {
+    const message = `Olá ${cliente.nome}! Como posso ajudá-lo hoje?`;
+    const phoneNumber = cliente.telefone.replace(/\D/g, '');
+    window.open(`https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const handleGeneratePDF = (cliente: any) => {
+    toast({
+      title: "Gerar PDF",
+      description: `PDF de ${cliente.nome} será gerado em breve.`,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -53,11 +77,11 @@ const Clientes = () => {
           <p className="text-muted-foreground">Gerencie a base de clientes Sol Lima</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button variant="outline" className="flex items-center gap-2" onClick={handleImportExcel}>
             <Upload className="h-4 w-4" />
             Importar Excel
           </Button>
-          <Button variant="default" className="flex items-center gap-2">
+          <Button variant="default" className="flex items-center gap-2" onClick={() => setShowAddClientModal(true)}>
             <UserPlus className="h-4 w-4" />
             Novo Cliente
           </Button>
@@ -148,11 +172,11 @@ const Clientes = () => {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleWhatsApp(cliente)}>
                     <MessageCircle className="h-4 w-4 mr-2" />
                     WhatsApp
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleGeneratePDF(cliente)}>
                     <Download className="h-4 w-4 mr-2" />
                     PDF
                   </Button>
@@ -171,6 +195,11 @@ const Clientes = () => {
           </CardContent>
         </Card>
       )}
+
+      <AddClientModal 
+        open={showAddClientModal} 
+        onClose={() => setShowAddClientModal(false)} 
+      />
     </div>
   );
 };
