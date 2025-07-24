@@ -16,10 +16,15 @@ import {
   Trash2
 } from "lucide-react";
 import { AddFinanceModal } from "@/components/modals/AddFinanceModal";
+import { EditFinanceModal, type FinanceEntry } from "@/components/modals/EditFinanceModal";
+import { useToast } from "@/hooks/use-toast";
 
 const Financeiro = () => {
+  const { toast } = useToast();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [showFinanceModal, setShowFinanceModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<FinanceEntry | null>(null);
   const [modalType, setModalType] = useState<"entrada" | "saida">("entrada");
   const [novaEntrada, setNovaEntrada] = useState({
     cliente: "",
@@ -36,33 +41,47 @@ const Financeiro = () => {
     data: ""
   });
 
-  // Dados mockados
-  const entradas = [
-    { id: 1, cliente: "Maria Silva", servico: "Hidratação", valor: 150.00, formaPagamento: "Pix", data: "2024-01-15" },
-    { id: 2, cliente: "Ana Santos", servico: "Corte + Finalização", valor: 200.00, formaPagamento: "Cartão", data: "2024-01-14" },
-    { id: 3, cliente: "Beatriz Costa", servico: "Cronograma Capilar", valor: 250.00, formaPagamento: "Dinheiro", data: "2024-01-13" },
-  ];
+  // Dados mockados - convertendo para formato FinanceEntry
+  const [entradas, setEntradas] = useState<FinanceEntry[]>([
+    { id: 1, tipo: "entrada", cliente: "Maria Silva", servico: "Hidratação", valor: 150.00, formaPagamento: "Pix", data: "2024-01-15" },
+    { id: 2, tipo: "entrada", cliente: "Ana Santos", servico: "Corte + Finalização", valor: 200.00, formaPagamento: "Cartão", data: "2024-01-14" },
+    { id: 3, tipo: "entrada", cliente: "Beatriz Costa", servico: "Cronograma Capilar", valor: 250.00, formaPagamento: "Dinheiro", data: "2024-01-13" },
+  ]);
 
-  const saidas = [
-    { id: 1, tipo: "Produto", descricao: "Máscara Hidratante", valor: 45.00, data: "2024-01-15" },
-    { id: 2, tipo: "Aluguel", descricao: "Aluguel do Espaço", valor: 800.00, data: "2024-01-10" },
-    { id: 3, tipo: "Marketing", descricao: "Impulsionamento Instagram", valor: 100.00, data: "2024-01-08" },
-  ];
+  const [saidas, setSaidas] = useState<FinanceEntry[]>([
+    { id: 1, tipo: "saida", categoria: "Produto", descricao: "Máscara Hidratante", valor: 45.00, data: "2024-01-15" },
+    { id: 2, tipo: "saida", categoria: "Aluguel", descricao: "Aluguel do Espaço", valor: 800.00, data: "2024-01-10" },
+    { id: 3, tipo: "saida", categoria: "Marketing", descricao: "Impulsionamento Instagram", valor: 100.00, data: "2024-01-08" },
+  ]);
 
   const totalEntradas = entradas.reduce((acc, entrada) => acc + entrada.valor, 0);
   const totalSaidas = saidas.reduce((acc, saida) => acc + saida.valor, 0);
   const saldoMensal = totalEntradas - totalSaidas;
 
-  const adicionarEntrada = () => {
-    console.log("Adicionar entrada:", novaEntrada);
-    // Aqui seria a lógica para adicionar a entrada
-    setNovaEntrada({ cliente: "", servico: "", valor: "", formaPagamento: "", data: "" });
+  const handleEditEntry = (entry: FinanceEntry) => {
+    setEditingEntry(entry);
+    setShowEditModal(true);
   };
 
-  const adicionarSaida = () => {
-    console.log("Adicionar saída:", novaSaida);
-    // Aqui seria a lógica para adicionar a saída
-    setNovaSaida({ tipo: "", descricao: "", valor: "", data: "" });
+  const handleSaveEntry = (updatedEntry: FinanceEntry) => {
+    if (updatedEntry.tipo === "entrada") {
+      setEntradas(prev => prev.map(e => e.id === updatedEntry.id ? updatedEntry : e));
+    } else {
+      setSaidas(prev => prev.map(s => s.id === updatedEntry.id ? updatedEntry : s));
+    }
+  };
+
+  const handleDeleteEntry = (entry: FinanceEntry) => {
+    if (entry.tipo === "entrada") {
+      setEntradas(prev => prev.filter(e => e.id !== entry.id));
+    } else {
+      setSaidas(prev => prev.filter(s => s.id !== entry.id));
+    }
+    
+    toast({
+      title: "Lançamento excluído!",
+      description: `${entry.tipo === "entrada" ? "Entrada" : "Saída"} foi removida com sucesso.`,
+    });
   };
 
   return (
@@ -234,10 +253,18 @@ const Financeiro = () => {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditEntry(entrada)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteEntry(entrada)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -348,10 +375,18 @@ const Financeiro = () => {
                         </div>
                       </div>
                       <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditEntry(saida)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteEntry(saida)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -368,6 +403,13 @@ const Financeiro = () => {
         open={showFinanceModal} 
         onClose={() => setShowFinanceModal(false)}
         type={modalType}
+      />
+      
+      <EditFinanceModal
+        open={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        entry={editingEntry}
+        onSave={handleSaveEntry}
       />
     </div>
   );

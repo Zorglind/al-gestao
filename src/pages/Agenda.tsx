@@ -202,7 +202,15 @@ const Agenda = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium">Navegação</label>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const newDate = new Date(currentDate);
+                    newDate.setDate(newDate.getDate() - 1);
+                    setCurrentDate(newDate);
+                  }}
+                >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <div className="text-sm text-center flex-1">
@@ -213,7 +221,15 @@ const Agenda = () => {
                     day: 'numeric' 
                   })}
                 </div>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    const newDate = new Date(currentDate);
+                    newDate.setDate(newDate.getDate() + 1);
+                    setCurrentDate(newDate);
+                  }}
+                >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -310,11 +326,24 @@ const Agenda = () => {
                           <div className="text-gray-600 truncate">
                             {agendamento.servico}
                           </div>
-                          <Badge 
-                            className={`mt-1 text-xs ${getStatusColor(agendamento.status)}`}
+                          <Select
+                            value={agendamento.status}
+                            onValueChange={(newStatus) => {
+                              // Aqui seria a lógica para atualizar o status
+                              console.log(`Alterando status de ${agendamento.cliente} para ${newStatus}`);
+                            }}
                           >
-                            {getStatusText(agendamento.status)}
-                          </Badge>
+                            <SelectTrigger className="h-6 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="agendado">Agendado</SelectItem>
+                              <SelectItem value="confirmado">Confirmado</SelectItem>
+                              <SelectItem value="em-andamento">Em Atendimento</SelectItem>
+                              <SelectItem value="finalizado">Finalizado</SelectItem>
+                              <SelectItem value="cancelado">Cancelado</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       ) : (
                         <div className="text-center text-gray-400 text-xs">

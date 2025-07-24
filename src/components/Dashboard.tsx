@@ -309,7 +309,11 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
             </DialogContent>
           </Dialog>
 
-          <Button variant="outline" className="h-16 flex-col space-y-1">
+          <Button 
+            variant="outline" 
+            className="h-16 flex-col space-y-1"
+            onClick={() => window.location.href = '/servicos'}
+          >
             <Scissors className="h-5 w-5" />
             <span className="text-sm font-medium">Serviços</span>
           </Button>

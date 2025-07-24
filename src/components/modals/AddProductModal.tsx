@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useDropzone } from "react-dropzone";
+import { Upload, X } from "lucide-react";
 
 interface AddProductModalProps {
   open: boolean;
@@ -20,8 +22,38 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
     nome: "",
     codigoBarras: "",
     valorVenda: "",
-    informacoesAdicionais: ""
+    informacoesAdicionais: "",
+    foto: ""
   });
+
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      setUploadedImage(imageUrl);
+      setFormData(prev => ({ ...prev, foto: imageUrl }));
+      
+      toast({
+        title: "Imagem carregada!",
+        description: "Imagem do produto adicionada com sucesso.",
+      });
+    }
+  }, [toast]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
+    },
+    maxFiles: 1
+  });
+
+  const removeImage = () => {
+    setUploadedImage(null);
+    setFormData(prev => ({ ...prev, foto: "" }));
+  };
 
   const categorias = [
     "Shampoo",
@@ -57,8 +89,10 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
       nome: "",
       codigoBarras: "",
       valorVenda: "",
-      informacoesAdicionais: ""
+      informacoesAdicionais: "",
+      foto: ""
     });
+    setUploadedImage(null);
     
     onClose();
   };
@@ -132,6 +166,65 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
                 onChange={(e) => setFormData({...formData, valorVenda: e.target.value})}
                 required
               />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Imagem do Produto</Label>
+            <div className="space-y-4">
+              {/* Upload de arquivo */}
+              {!uploadedImage && (
+                <div
+                  {...getRootProps()}
+                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                    isDragActive
+                      ? 'border-primary bg-primary/10'
+                      : 'border-gray-300 hover:border-primary'
+                  }`}
+                >
+                  <input {...getInputProps()} />
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm text-gray-600">
+                    {isDragActive
+                      ? 'Solte a imagem aqui...'
+                      : 'Arraste uma imagem ou clique para selecionar'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    PNG, JPG, WEBP até 5MB
+                  </p>
+                </div>
+              )}
+
+              {/* Imagem carregada */}
+              {uploadedImage && (
+                <div className="relative">
+                  <img
+                    src={uploadedImage}
+                    alt="Preview"
+                    className="w-full h-40 object-cover rounded-lg border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6"
+                    onClick={removeImage}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Campo de URL alternativo */}
+              <div className="space-y-2">
+                <Label htmlFor="foto">Ou digite uma URL da imagem</Label>
+                <Input
+                  id="foto"
+                  value={formData.foto}
+                  onChange={(e) => setFormData({...formData, foto: e.target.value})}
+                  placeholder="https://exemplo.com/imagem.jpg"
+                />
+              </div>
             </div>
           </div>
 

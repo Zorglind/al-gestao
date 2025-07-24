@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,66 +6,76 @@ import { Badge } from "@/components/ui/badge";
 import { UserPlus, Search, Phone, Mail, Upload, MessageCircle, Download } from "lucide-react";
 import { AddClientModal } from "@/components/modals/AddClientModal";
 import { useToast } from "@/hooks/use-toast";
+import { useDropzone } from "react-dropzone";
+import { generateClientPDF, processExcelImport, type ClientData } from "@/utils/pdfGenerator";
 
 const Clientes = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [clientes, setClientes] = useState<ClientData[]>([
+    { id: 1, nome: "Maria Silva", telefone: "(11) 99999-9999", email: "maria@email.com", servicos: 8, ultimoServico: "2024-01-15" },
+    { id: 2, nome: "Ana Santos", telefone: "(11) 88888-8888", email: "ana@email.com", servicos: 5, ultimoServico: "2024-01-10" },
+    { id: 3, nome: "Beatriz Costa", telefone: "(11) 77777-7777", email: "beatriz@email.com", servicos: 12, ultimoServico: "2024-01-20" },
+  ]);
   const { toast } = useToast();
-
-  const clientes = [
-    { 
-      id: 1, 
-      nome: "Maria Silva", 
-      telefone: "(11) 99999-9999", 
-      email: "maria@email.com",
-      profissao: "Advogada",
-      ultimoAtendimento: "2024-01-15",
-      totalServicos: 8
-    },
-    { 
-      id: 2, 
-      nome: "Ana Santos", 
-      telefone: "(11) 88888-8888", 
-      email: "ana@email.com",
-      profissao: "Professora",
-      ultimoAtendimento: "2024-01-12",
-      totalServicos: 5
-    },
-    { 
-      id: 3, 
-      nome: "Beatriz Costa", 
-      telefone: "(11) 77777-7777", 
-      email: "bia@email.com",
-      profissao: "Enfermeira",
-      ultimoAtendimento: "2024-01-10",
-      totalServicos: 12
-    },
-  ];
 
   const filteredClientes = clientes.filter(cliente =>
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cliente.telefone.includes(searchTerm) ||
-    cliente.profissao.toLowerCase().includes(searchTerm.toLowerCase())
+    cliente.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleImportExcel = () => {
-    toast({
-      title: "Importar Excel",
-      description: "Funcionalidade de importação será implementada em breve.",
-    });
-  };
+  const onDropExcel = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      try {
+        const importedClients = await processExcelImport(file);
+        setClientes(prev => [...prev, ...importedClients]);
+        
+        toast({
+          title: "Importação concluída!",
+          description: `${importedClients.length} clientes foram importados com sucesso.`,
+        });
+      } catch (error) {
+        toast({
+          title: "Erro na importação",
+          description: "Não foi possível processar o arquivo. Verifique o formato.",
+          variant: "destructive"
+        });
+      }
+    }
+  }, [toast, setClientes]);
 
-  const handleWhatsApp = (cliente: any) => {
+  const { getRootProps: getExcelRootProps, getInputProps: getExcelInputProps } = useDropzone({
+    onDrop: onDropExcel,
+    accept: {
+      'text/csv': ['.csv'],
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+    },
+    maxFiles: 1
+  });
+
+  const handleWhatsApp = (cliente: ClientData) => {
     const message = `Olá ${cliente.nome}! Como posso ajudá-lo hoje?`;
     const phoneNumber = cliente.telefone.replace(/\D/g, '');
     window.open(`https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
-  const handleGeneratePDF = (cliente: any) => {
-    toast({
-      title: "Gerar PDF",
-      description: `PDF de ${cliente.nome} será gerado em breve.`,
-    });
+  const handleGeneratePDF = async (cliente: ClientData) => {
+    try {
+      await generateClientPDF(cliente);
+      toast({
+        title: "PDF gerado!",
+        description: `PDF da ficha de ${cliente.nome} foi baixado.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao gerar PDF",
+        description: "Não foi possível gerar o PDF. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -77,10 +87,13 @@ const Clientes = () => {
           <p className="text-muted-foreground">Gerencie a base de clientes Sol Lima</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="flex items-center gap-2" onClick={handleImportExcel}>
-            <Upload className="h-4 w-4" />
-            Importar Excel
-          </Button>
+          <div {...getExcelRootProps()}>
+            <input {...getExcelInputProps()} />
+            <Button variant="outline" className="flex items-center gap-2 cursor-pointer">
+              <Upload className="h-4 w-4" />
+              Importar Excel
+            </Button>
+          </div>
           <Button variant="default" className="flex items-center gap-2" onClick={() => setShowAddClientModal(true)}>
             <UserPlus className="h-4 w-4" />
             Novo Cliente
@@ -100,7 +113,7 @@ const Clientes = () => {
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nome, telefone ou profissão..."
+              placeholder="Buscar por nome, telefone ou email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -146,7 +159,7 @@ const Clientes = () => {
                     </div>
                     <div>
                       <h3 className="font-semibold text-lg">{cliente.nome}</h3>
-                      <p className="text-sm text-muted-foreground">{cliente.profissao}</p>
+                      <p className="text-sm text-muted-foreground">Cliente</p>
                     </div>
                   </div>
                   
@@ -163,10 +176,10 @@ const Clientes = () => {
 
                   <div className="flex gap-2">
                     <Badge variant="outline">
-                      {cliente.totalServicos} serviços
+                      {cliente.servicos} serviços
                     </Badge>
                     <Badge variant="secondary">
-                      Último: {new Date(cliente.ultimoAtendimento).toLocaleDateString('pt-BR')}
+                      Último: {new Date(cliente.ultimoServico).toLocaleDateString('pt-BR')}
                     </Badge>
                   </div>
                 </div>
