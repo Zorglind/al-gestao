@@ -78,8 +78,34 @@ export const profileService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/avatar.${fileExt}`;
+    // Security validations
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    
+    if (file.size > maxFileSize) {
+      throw new Error('File size must be less than 5MB');
+    }
+    
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error('Only JPEG, PNG, and WebP images are allowed');
+    }
+
+    // Validate file extension matches MIME type
+    const fileExt = file.name.split('.').pop()?.toLowerCase();
+    const mimeTypeMap: Record<string, string[]> = {
+      'image/jpeg': ['jpg', 'jpeg'],
+      'image/png': ['png'],
+      'image/webp': ['webp']
+    };
+    
+    const validExtensions = mimeTypeMap[file.type];
+    if (!fileExt || !validExtensions?.includes(fileExt)) {
+      throw new Error('File extension does not match file type');
+    }
+
+    // Generate secure filename
+    const timestamp = Date.now();
+    const fileName = `${user.id}/avatar_${timestamp}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')

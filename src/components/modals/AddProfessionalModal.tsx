@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { secureProfessionalsService, validateInput } from "@/services/secureProfessionalsService";
 
 interface AddProfessionalModalProps {
   open: boolean;
@@ -14,8 +15,9 @@ interface AddProfessionalModalProps {
   onSuccess?: () => void;
 }
 
-export function AddProfessionalModal({ open, onClose }: AddProfessionalModalProps) {
+export function AddProfessionalModal({ open, onClose, onSuccess }: AddProfessionalModalProps) {
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -26,58 +28,104 @@ export function AddProfessionalModal({ open, onClose }: AddProfessionalModalProp
     horarioInicio: "",
     horarioFim: "",
     ativo: true,
-    permissoes: ["dashboard", "clientes", "agenda", "anamnese"] // Permissões padrão
+    permissoes: ["dashboard", "clients", "agenda", "anamnesis", "profile"] // Permissões padrão seguras
   });
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validações
-    if (!validateEmail(formData.email)) {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Validações usando o serviço seguro
+      const nameValidation = validateInput.name(formData.nome);
+      const emailValidation = validateInput.email(formData.email);
+      const passwordValidation = validateInput.password(formData.senha);
+      const phoneValidation = validateInput.phone(formData.telefone);
+
+      // Coletar todos os erros
+      const allErrors = [
+        ...nameValidation.errors,
+        ...emailValidation.errors,
+        ...passwordValidation.errors,
+        ...phoneValidation.errors
+      ];
+
+      if (allErrors.length > 0) {
+        toast({
+          title: "Dados inválidos!",
+          description: allErrors[0], // Mostrar o primeiro erro
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Converter permissões para o formato esperado
+      const permissionsMap: Record<string, boolean> = {
+        dashboard: formData.permissoes.includes("dashboard"),
+        clients: formData.permissoes.includes("clients") || formData.permissoes.includes("clientes"),
+        agenda: formData.permissoes.includes("agenda"),
+        services: formData.permissoes.includes("services") || formData.permissoes.includes("servicos"),
+        products: formData.permissoes.includes("products") || formData.permissoes.includes("produtos"),
+        financial: formData.permissoes.includes("financial") || formData.permissoes.includes("financeiro"),
+        anamnesis: formData.permissoes.includes("anamnesis") || formData.permissoes.includes("anamnese"),
+        professionals: formData.permissoes.includes("professionals"),
+        exports: formData.permissoes.includes("exports") || formData.permissoes.includes("exportacoes"),
+        profile: true // Sempre dar acesso ao perfil
+      };
+
+      const result = await secureProfessionalsService.createProfessional({
+        name: formData.nome,
+        email: formData.email,
+        password: formData.senha,
+        specialty: formData.cargo,
+        phone: formData.telefone,
+        workStartTime: formData.horarioInicio,
+        workEndTime: formData.horarioFim,
+        permissions: permissionsMap
+      });
+
+      if (result.success) {
+        toast({
+          title: "Profissional criado com sucesso!",
+          description: `${formData.nome} foi cadastrado no sistema.`,
+        });
+        
+        // Reset form
+        setFormData({
+          nome: "",
+          email: "",
+          senha: "",
+          cargo: "",
+          telefone: "",
+          whatsapp: "",
+          horarioInicio: "",
+          horarioFim: "",
+          ativo: true,
+          permissoes: ["dashboard", "clients", "agenda", "anamnesis", "profile"]
+        });
+        
+        onSuccess?.();
+        onClose();
+      } else {
+        toast({
+          title: "Erro ao criar profissional",
+          description: result.error || "Ocorreu um erro inesperado.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating professional:', error);
       toast({
-        title: "E-mail inválido!",
-        description: "Por favor, insira um e-mail válido.",
+        title: "Erro ao criar profissional",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    if (formData.senha.length < 6) {
-      toast({
-        title: "Senha muito curta!",
-        description: "A senha deve ter pelo menos 6 caracteres.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    console.log("Dados do profissional:", formData);
-    
-    toast({
-      title: "Profissional adicionado com sucesso!",
-      description: `${formData.nome} foi cadastrado no sistema com acesso personalizado.`,
-    });
-    
-    // Reset form
-    setFormData({
-      nome: "",
-      email: "",
-      senha: "",
-      cargo: "",
-      telefone: "",
-      whatsapp: "",
-      horarioInicio: "",
-      horarioFim: "",
-      ativo: true,
-      permissoes: ["dashboard", "clientes", "agenda", "anamnese"]
-    });
-    
-    onClose();
   };
 
   return (
@@ -193,14 +241,13 @@ export function AddProfessionalModal({ open, onClose }: AddProfessionalModalProp
             <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg">
               {[
                 { key: "dashboard", label: "Painel" },
-                { key: "clientes", label: "Clientes" },
+                { key: "clients", label: "Clientes" },
                 { key: "agenda", label: "Agenda" },
-                { key: "anamnese", label: "Anamnese" },
-                { key: "produtos", label: "Produtos" },
-                { key: "servicos", label: "Serviços" },
-                { key: "catalogo", label: "Catálogo" },
-                { key: "financeiro", label: "Financeiro" },
-                { key: "exportacoes", label: "Exportações" },
+                { key: "anamnesis", label: "Anamnese" },
+                { key: "services", label: "Serviços" },
+                { key: "products", label: "Produtos" },
+                { key: "financial", label: "Financeiro" },
+                { key: "exports", label: "Exportações" },
               ].map((permissao) => (
                 <div key={permissao.key} className="flex items-center space-x-2">
                   <input
@@ -240,11 +287,11 @@ export function AddProfessionalModal({ open, onClose }: AddProfessionalModalProp
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Adicionar Profissional
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Criando..." : "Adicionar Profissional"}
             </Button>
           </div>
         </form>

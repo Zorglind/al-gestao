@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { profileService, ProfessionalProfile, UpdateProfileData } from "@/services/profileService";
 import { servicesService, Service } from "@/services/servicesService";
+import { validate } from "@/utils/inputValidation";
 import { 
   User, 
   Clock, 
@@ -133,6 +134,18 @@ const MeuPerfil = () => {
 
     try {
       setSaving(true);
+      
+      // Validate file before upload
+      const fileValidation = validate.file(file);
+      if (!fileValidation.isValid) {
+        toast({
+          title: "Arquivo inválido",
+          description: fileValidation.error,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const avatarUrl = await profileService.uploadAvatar(file);
       setProfilePhoto(avatarUrl);
       

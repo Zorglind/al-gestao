@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { clientsService } from "@/services/clientsService";
 import { Loader2 } from "lucide-react";
+import { validate, sanitize, formatters } from "@/utils/inputValidation";
 
 interface AddClientModalProps {
   open: boolean;
@@ -30,10 +31,23 @@ export function AddClientModal({ open, onClose, onClientAdded }: AddClientModalP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.nome.trim() || !formData.telefone.trim()) {
+    // Validate inputs
+    const nameValidation = validate.name(formData.nome);
+    const phoneValidation = validate.phone(formData.telefone);
+    const emailValidation = formData.email ? validate.email(formData.email) : { isValid: true };
+    const cpfValidation = validate.cpf(formData.cpf);
+
+    const validationErrors = [
+      !nameValidation.isValid && nameValidation.error,
+      !phoneValidation.isValid && phoneValidation.error,
+      !emailValidation.isValid && emailValidation.error,
+      !cpfValidation.isValid && cpfValidation.error
+    ].filter(Boolean);
+
+    if (validationErrors.length > 0) {
       toast({
-        title: "Erro",
-        description: "Nome e telefone são obrigatórios.",
+        title: "Dados inválidos",
+        description: validationErrors[0] as string,
         variant: "destructive",
       });
       return;
@@ -43,13 +57,13 @@ export function AddClientModal({ open, onClose, onClientAdded }: AddClientModalP
     
     try {
       await clientsService.create({
-        name: formData.nome.trim(),
-        phone: formData.telefone.trim(),
-        email: formData.email.trim() || null,
-        cpf: formData.cpf.trim() || null,
-        profession: formData.profissao.trim() || null,
-        instagram: formData.redesSociais.trim() || null,
-        observations: formData.observacoes.trim() || null,
+        name: sanitize.string(formData.nome),
+        phone: sanitize.phone(formData.telefone),
+        email: formData.email ? sanitize.email(formData.email) : null,
+        cpf: formData.cpf ? sanitize.string(formData.cpf) : null,
+        profession: formData.profissao ? sanitize.string(formData.profissao) : null,
+        instagram: formData.redesSociais ? sanitize.string(formData.redesSociais) : null,
+        observations: formData.observacoes ? sanitize.string(formData.observacoes) : null,
       });
 
       toast({
@@ -105,7 +119,10 @@ export function AddClientModal({ open, onClose, onClientAdded }: AddClientModalP
                 id="telefone"
                 type="tel"
                 value={formData.telefone}
-                onChange={(e) => setFormData({...formData, telefone: e.target.value})}
+                onChange={(e) => {
+                  const formatted = formatters.phone(e.target.value);
+                  setFormData({...formData, telefone: formatted});
+                }}
                 required
               />
             </div>
@@ -126,7 +143,10 @@ export function AddClientModal({ open, onClose, onClientAdded }: AddClientModalP
               <Input
                 id="cpf"
                 value={formData.cpf}
-                onChange={(e) => setFormData({...formData, cpf: e.target.value})}
+                onChange={(e) => {
+                  const formatted = formatters.cpf(e.target.value);
+                  setFormData({...formData, cpf: formatted});
+                }}
                 maxLength={14}
                 placeholder="000.000.000-00"
               />
