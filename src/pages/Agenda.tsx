@@ -93,7 +93,7 @@ const AgendaContent = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState("diaria");
-  const [selectedProfessional, setSelectedProfessional] = useState("todos");
+  const [selectedProfessional, setSelectedProfessional] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [novoAgendamento, setNovoAgendamento] = useState({
     cliente: "",
@@ -116,18 +116,18 @@ const AgendaContent = () => {
 
   const profissionais = ["Ana Santos", "Carlos Lima"];
   
-  // Gerar horários de 10 em 10 minutos de 07:00 às 19:00
+  // Gerar horários de 30 em 30 minutos de 08:00 às 19:00
   const horarios = [];
-  for (let h = 7; h < 19; h++) {
-    for (let m = 0; m < 60; m += 10) {
+  for (let h = 8; h < 19; h++) {
+    for (let m = 0; m < 60; m += 30) {
       const hora = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
       horarios.push(hora);
     }
   }
 
-  const filteredAgendamentos = selectedProfessional === "todos" 
-    ? agendamentos 
-    : agendamentos.filter(a => a.profissional === selectedProfessional);
+  const filteredAgendamentos = selectedProfessional
+    ? agendamentos.filter(a => a.profissional === selectedProfessional)
+    : [];
 
   const stats = {
     total: agendamentos.length,
@@ -344,7 +344,6 @@ const AgendaContent = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="Ana Santos">Ana Santos</SelectItem>
                   <SelectItem value="Carlos Lima">Carlos Lima</SelectItem>
                 </SelectContent>
@@ -367,11 +366,11 @@ const AgendaContent = () => {
                 </Button>
                 <div className="text-sm text-center flex-1">
                   {currentDate.toLocaleDateString('pt-BR', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
+                    weekday: 'long',
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  }).replace(/(\w+),\s*(\d+)\/(\d+)\/(\d+)/, '$1, $2/$3/$4')}
                 </div>
                 <Button 
                   variant="outline" 
@@ -423,25 +422,40 @@ const AgendaContent = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Agenda Visual - {currentDate.toLocaleDateString('pt-BR')}
+            Agenda Visual - {currentDate.toLocaleDateString('pt-BR', { 
+              weekday: 'long',
+              day: '2-digit', 
+              month: '2-digit', 
+              year: 'numeric' 
+            }).replace(/(\w+),\s*(\d+)\/(\d+)\/(\d+)/, '$1, $2/$3/$4')}
           </CardTitle>
           <CardDescription>
             Visualização por horário e profissional
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isMobile ? (
+          {!selectedProfessional ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <User className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+                Selecione um profissional
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Escolha um profissional nos filtros acima para visualizar a agenda
+              </p>
+            </div>
+          ) : isMobile ? (
             <MobileAgendaGrid
-              agendamentos={agendamentos}
-              profissionais={profissionais}
+              agendamentos={filteredAgendamentos}
+              profissional={selectedProfessional}
               horarios={horarios}
               DraggableAgendamento={DraggableAgendamento}
               updateAgendamentoStatus={updateAgendamentoStatus}
             />
           ) : (
             <DesktopAgendaGrid
-              agendamentos={agendamentos}
-              profissionais={profissionais}
+              agendamentos={filteredAgendamentos}
+              profissionais={[selectedProfessional]}
               horarios={horarios}
               DraggableAgendamento={DraggableAgendamento}
               updateAgendamentoStatus={updateAgendamentoStatus}

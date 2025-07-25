@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { User } from "lucide-react";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { DroppableTimeSlot } from "./DroppableTimeSlot";
 import { useSortable } from "@dnd-kit/sortable";
@@ -16,7 +14,7 @@ interface Agendamento {
   data: string;
 }
 
-// Mobile-optimized appointment card
+// Mobile-optimized appointment card with status selector
 function MobileAppointmentCard({ agendamento, updateStatus }: { agendamento: Agendamento; updateStatus: (id: number, status: string) => void }) {
   const {
     attributes,
@@ -48,15 +46,30 @@ function MobileAppointmentCard({ agendamento, updateStatus }: { agendamento: Age
       style={style}
       {...attributes}
       {...listeners}
-      className={`h-12 p-1 border rounded transition-colors cursor-grab active:cursor-grabbing ${getStatusBackgroundColor(agendamento.status)} text-white border-transparent`}
+      className={`min-h-[80px] p-2 border rounded transition-colors cursor-grab active:cursor-grabbing ${getStatusBackgroundColor(agendamento.status)} text-white border-transparent shadow-sm`}
     >
-      <div className="text-xs">
-        <div className="font-semibold text-white truncate text-xs">
+      <div className="space-y-1">
+        <div className="font-semibold text-white truncate text-sm">
           {agendamento.cliente}
         </div>
         <div className="text-white/90 truncate text-xs">
           {agendamento.horario} - {agendamento.servico}
         </div>
+        <Select
+          value={agendamento.status}
+          onValueChange={(newStatus) => updateStatus(agendamento.id, newStatus)}
+        >
+          <SelectTrigger className="h-6 text-xs bg-white/20 border-white/30 text-white hover:bg-white/30">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="agendado">Agendado</SelectItem>
+            <SelectItem value="confirmado">Confirmado</SelectItem>
+            <SelectItem value="realizado">Realizado</SelectItem>
+            <SelectItem value="faltou">Faltou</SelectItem>
+            <SelectItem value="cancelado">Cancelado</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
@@ -64,7 +77,7 @@ function MobileAppointmentCard({ agendamento, updateStatus }: { agendamento: Age
 
 interface MobileAgendaGridProps {
   agendamentos: Agendamento[];
-  profissionais: string[];
+  profissional: string;
   horarios: string[];
   DraggableAgendamento: React.ComponentType<{
     agendamento: Agendamento;
@@ -75,68 +88,57 @@ interface MobileAgendaGridProps {
 
 export function MobileAgendaGrid({
   agendamentos,
-  profissionais,
+  profissional,
   horarios,
   DraggableAgendamento,
   updateAgendamentoStatus,
 }: MobileAgendaGridProps) {
   return (
-    <div className="flex overflow-x-auto">
-      {/* Coluna de Horários Fixa */}
-      <div className="sticky left-0 z-10 bg-background border-r border-border">
-        <div className="w-20 h-12 flex items-center justify-center font-semibold text-xs bg-muted border-b">
-          Horário
+    <div className="space-y-2">
+      {/* Header do Profissional */}
+      <div className="p-3 bg-primary text-primary-foreground rounded-lg text-center font-semibold">
+        {profissional}
+      </div>
+
+      {/* Lista vertical de horários para mobile */}
+      <SortableContext
+        items={agendamentos.filter(a => a.profissional === profissional).map(a => a.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="space-y-2">
+          {horarios.map((hora) => {
+            const agendamento = agendamentos.find(
+              a => a.horario === hora && a.profissional === profissional
+            );
+
+            return (
+              <div key={`${profissional}-${hora}`} className="flex items-start gap-3">
+                {/* Horário fixo à esquerda */}
+                <div className="w-16 flex-shrink-0 text-sm font-medium text-muted-foreground pt-2">
+                  {hora}
+                </div>
+                
+                {/* Slot do agendamento */}
+                <DroppableTimeSlot
+                  id={`${profissional}-${hora}`}
+                  className="flex-1 min-h-[80px]"
+                >
+                  {agendamento ? (
+                    <MobileAppointmentCard
+                      agendamento={agendamento}
+                      updateStatus={updateAgendamentoStatus}
+                    />
+                  ) : (
+                    <div className="min-h-[80px] border-2 border-dashed border-muted rounded-lg flex items-center justify-center text-muted-foreground text-sm hover:border-primary/50 transition-colors">
+                      Disponível
+                    </div>
+                  )}
+                </DroppableTimeSlot>
+              </div>
+            );
+          })}
         </div>
-        {horarios.map((hora) => (
-          <div
-            key={hora}
-            className="w-20 h-12 flex items-center justify-center text-xs text-muted-foreground border-b bg-background"
-          >
-            {hora}
-          </div>
-        ))}
-      </div>
-
-      {/* Colunas dos Profissionais */}
-      <div className="flex">
-        {profissionais.map((profissional) => (
-          <div key={profissional} className="min-w-[200px] border-r border-border">
-            <div className="h-12 flex items-center justify-center font-semibold text-xs bg-primary text-primary-foreground border-b px-2">
-              <User className="h-3 w-3 mr-1" />
-              <span className="truncate">{profissional}</span>
-            </div>
-            <SortableContext
-              items={agendamentos.filter(a => a.profissional === profissional).map(a => a.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {horarios.map((hora) => {
-                const agendamento = agendamentos.find(
-                  a => a.horario === hora && a.profissional === profissional
-                );
-
-                return (
-                  <DroppableTimeSlot
-                    key={`${profissional}-${hora}`}
-                    id={`${profissional}-${hora}`}
-                    className={`border-b h-12 ${!agendamento ? 'p-1 hover:bg-muted/50' : ''}`}
-                  >
-                    {agendamento ? (
-                      <MobileAppointmentCard
-                        agendamento={agendamento}
-                        updateStatus={updateAgendamentoStatus}
-                      />
-                    ) : (
-                      <div className="h-full flex items-center justify-center text-center text-muted-foreground text-xs">
-                        Livre
-                      </div>
-                    )}
-                  </DroppableTimeSlot>
-                );
-              })}
-            </SortableContext>
-          </div>
-        ))}
-      </div>
+      </SortableContext>
     </div>
   );
 }

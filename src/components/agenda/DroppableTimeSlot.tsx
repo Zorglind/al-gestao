@@ -13,15 +13,15 @@ export function DroppableTimeSlot({ id, children, className = "" }: DroppableTim
   });
 
   const style = {
-    backgroundColor: isOver ? 'rgba(59, 130, 246, 0.1)' : undefined,
-    borderColor: isOver ? 'rgb(59, 130, 246)' : undefined,
+    backgroundColor: isOver ? 'hsl(var(--primary) / 0.1)' : undefined,
+    borderColor: isOver ? 'hsl(var(--primary))' : undefined,
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`h-16 transition-colors ${className}`}
+      className={`transition-colors ${className}`}
     >
       {children}
     </div>

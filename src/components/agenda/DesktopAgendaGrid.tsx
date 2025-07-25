@@ -31,23 +31,23 @@ export function DesktopAgendaGrid({
   updateAgendamentoStatus,
 }: DesktopAgendaGridProps) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[100px_1fr_1fr] gap-4">
+    <div className="grid grid-cols-[120px_1fr] gap-4">
       {/* Coluna de Horários */}
       <div className="space-y-2">
-        <div className="h-12 flex items-center justify-center font-semibold text-sm bg-muted rounded">
+        <div className="h-16 flex items-center justify-center font-semibold text-sm bg-muted rounded">
           Horário
         </div>
         {horarios.map((hora) => (
-          <div key={hora} className="h-16 flex items-center justify-center text-sm text-muted-foreground border rounded">
+          <div key={hora} className="h-20 flex items-center justify-center text-sm text-muted-foreground border rounded">
             {hora}
           </div>
         ))}
       </div>
 
-      {/* Colunas dos Profissionais */}
+      {/* Coluna do Profissional Selecionado */}
       {profissionais.map((profissional) => (
         <div key={profissional} className="space-y-2">
-          <div className="h-12 flex items-center justify-center font-semibold text-sm bg-primary text-primary-foreground rounded">
+          <div className="h-16 flex items-center justify-center font-semibold text-sm bg-primary text-primary-foreground rounded">
             <User className="h-4 w-4 mr-2" />
             {profissional}
           </div>
@@ -64,7 +64,7 @@ export function DesktopAgendaGrid({
                 <DroppableTimeSlot
                   key={`${profissional}-${hora}`}
                   id={`${profissional}-${hora}`}
-                  className={`${!agendamento ? 'p-2 border rounded hover:bg-gray-100 border-gray-200' : ''}`}
+                  className="h-20"
                 >
                   {agendamento ? (
                     <DraggableAgendamento
@@ -72,7 +72,7 @@ export function DesktopAgendaGrid({
                       updateStatus={updateAgendamentoStatus}
                     />
                   ) : (
-                    <div className="h-full flex items-center justify-center text-center text-gray-400 text-xs">
+                    <div className="h-full border-2 border-dashed border-muted rounded flex items-center justify-center text-muted-foreground text-sm hover:border-primary/50 transition-colors">
                       Disponível
                     </div>
                   )}
