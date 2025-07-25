@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Package, Plus, Search, Tag, Package2 } from "lucide-react";
+import { Package, Plus, Search, Tag, Package2, Trash2 } from "lucide-react";
 import { AddProductModal } from "@/components/modals/AddProductModal";
 import { EditProductModal } from "@/components/modals/EditProductModal";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 
 const Produtos = () => {
@@ -13,9 +14,7 @@ const Produtos = () => {
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [showEditProductModal, setShowEditProductModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const { toast } = useToast();
-
-  const produtos = [
+  const [produtos, setProdutos] = useState([
     {
       id: 1,
       nome: "Shampoo Hidratante Natural",
@@ -56,7 +55,16 @@ const Produtos = () => {
       descricao: "Leave-in com proteção térmica e anti-frizz",
       foto: "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=300&h=300&fit=crop"
     },
-  ];
+  ]);
+  const { toast } = useToast();
+
+  const handleDeleteProduct = (productId: number) => {
+    setProdutos(produtos.filter(produto => produto.id !== productId));
+    toast({
+      title: "Produto excluído",
+      description: "O produto foi removido do catálogo.",
+    });
+  };
 
   const filteredProdutos = produtos.filter(produto =>
     produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -183,12 +191,35 @@ const Produtos = () => {
                   </div>
                 </div>
                 
-                <Button variant="outline" className="w-full" onClick={() => {
-                  setSelectedProduct(produto);
-                  setShowEditProductModal(true);
-                }}>
-                  Editar Produto
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => {
+                    setSelectedProduct(produto);
+                    setShowEditProductModal(true);
+                  }}>
+                    Editar
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="icon">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir Produto</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tem certeza que deseja excluir "{produto.nome}"? Esta ação não poderá ser desfeita.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDeleteProduct(produto.id)}>
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             </CardContent>
           </Card>

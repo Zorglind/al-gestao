@@ -10,6 +10,7 @@ import Agenda from "@/pages/Agenda";
 import Servicos from "@/pages/Servicos";
 import Produtos from "@/pages/Produtos";
 import Anamnese from "@/pages/Anamnese";
+import Catalogo from "@/pages/Catalogo";
 import Exportacoes from "@/pages/Exportacoes";
 import MeuPerfil from "@/pages/MeuPerfil";
 import Financeiro from "@/pages/Financeiro";
@@ -92,6 +93,7 @@ const Index = () => {
               <Route path="/agenda" element={<Agenda />} />
               <Route path="/servicos" element={<Servicos />} />
               <Route path="/produtos" element={<Produtos />} />
+              <Route path="/catalogo" element={<Catalogo />} />
               <Route path="/anamnese" element={<Anamnese />} />
               <Route path="/financeiro" element={<Financeiro />} />
               <Route path="/exportacoes" element={<Exportacoes />} />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ interface DashboardProps {
 }
 
 const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
+  const navigate = useNavigate();
   const [busca, setBusca] = useState("");
   const [lembretes, setLembretes] = useState([
     "Parabéns! Você bateu sua meta do mês!",
@@ -312,7 +314,7 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
           <Button 
             variant="outline" 
             className="h-16 flex-col space-y-1"
-            onClick={() => window.location.href = '/servicos'}
+            onClick={() => navigate('/servicos')}
           >
             <Scissors className="h-5 w-5" />
             <span className="text-sm font-medium">Serviços</span>

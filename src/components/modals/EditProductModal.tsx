@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDropzone } from "react-dropzone";
+import { Upload, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Product {
@@ -31,6 +34,8 @@ export function EditProductModal({ open, onClose, product }: EditProductModalPro
     estoque: "",
     foto: ""
   });
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   const categorias = [
     "Shampoo",
@@ -49,8 +54,28 @@ export function EditProductModal({ open, onClose, product }: EditProductModalPro
         estoque: product.estoque.toString(),
         foto: product.foto
       });
+      setPreviewUrl(product.foto);
+      setUploadedFile(null);
     }
   }, [product]);
+
+  const onDrop = (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      setUploadedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setFormData({...formData, foto: url});
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
+    },
+    maxFiles: 1
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,13 +145,60 @@ export function EditProductModal({ open, onClose, product }: EditProductModalPro
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="foto">URL da Foto</Label>
-            <Input
-              id="foto"
-              value={formData.foto}
-              onChange={(e) => setFormData({...formData, foto: e.target.value})}
-              placeholder="https://..."
-            />
+            <Label>Foto do Produto</Label>
+            <Tabs defaultValue="upload" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="upload">Upload de Arquivo</TabsTrigger>
+                <TabsTrigger value="url">URL da Imagem</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="upload">
+                <div
+                  {...getRootProps()}
+                  className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                    isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'
+                  }`}
+                >
+                  <input {...getInputProps()} />
+                  <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    {isDragActive ? 'Solte a imagem aqui...' : 'Clique ou arraste uma imagem aqui'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Formatos: JPG, PNG, WEBP (máx. 1 arquivo)
+                  </p>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="url">
+                <Input
+                  value={formData.foto}
+                  onChange={(e) => {
+                    setFormData({...formData, foto: e.target.value});
+                    setPreviewUrl(e.target.value);
+                    setUploadedFile(null);
+                  }}
+                  placeholder="https://exemplo.com/imagem.jpg"
+                />
+              </TabsContent>
+            </Tabs>
+            
+            {previewUrl && (
+              <div className="mt-4 p-4 border rounded-lg">
+                <Label className="text-sm font-medium flex items-center gap-2 mb-2">
+                  <Image className="h-4 w-4" />
+                  Preview da Imagem
+                </Label>
+                <img 
+                  src={previewUrl} 
+                  alt="Preview" 
+                  className="w-full h-48 object-cover rounded-md"
+                  onError={(e) => {
+                    e.currentTarget.src = '/placeholder.svg';
+                  }}
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

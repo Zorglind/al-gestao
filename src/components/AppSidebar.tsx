@@ -10,7 +10,8 @@ import {
   Download, 
   BarChart3,
   DollarSign,
-  User
+  User,
+  Layers
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,6 +33,7 @@ const menuItems = [
   { title: "Agenda", url: "/agenda", icon: Calendar },
   { title: "Serviços", url: "/servicos", icon: Scissors },
   { title: "Produtos", url: "/produtos", icon: Package },
+  { title: "Catálogo", url: "/catalogo", icon: Layers },
   { title: "Anamnese", url: "/anamnese", icon: FileText },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Exportações", url: "/exportacoes", icon: Download },
