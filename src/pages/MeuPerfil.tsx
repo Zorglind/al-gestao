@@ -7,13 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Building, Phone, Mail, MapPin, Palette, Clock, Upload, Save } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { User, Building, Phone, Mail, MapPin, Palette, Clock, Upload, Save, Shield, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BRAND } from "@/constants/branding";
+import { useAuth } from "@/contexts/AuthContext";
 import * as React from "react";
 
 const MeuPerfil = () => {
   const { toast } = useToast();
+  const { profile, isAdmin, isProfessional, getUserTypeDisplay } = useAuth();
   const [tema, setTema] = useState("claro");
   const [notificacoes, setNotificacoes] = useState(true);
   const [profilePhoto, setProfilePhoto] = useState<string>("");
@@ -260,12 +263,70 @@ const MeuPerfil = () => {
             </CardContent>
           </Card>
 
+          {/* Informações da Conta */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Informações da Conta
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Tipo de Usuário</Label>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <Badge variant={isAdmin ? "default" : "secondary"} className="text-sm">
+                      {getUserTypeDisplay()}
+                    </Badge>
+                  </div>
+                </div>
+
+                {isProfessional && profile?.permissions && (
+                  <div className="space-y-2">
+                    <Label>Permissões de Acesso</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(profile.permissions).map(([key, value]) => (
+                        <div key={key} className="flex items-center justify-between p-2 bg-muted rounded">
+                          <span className="text-sm capitalize">{key}</span>
+                          <Badge variant={value ? "default" : "outline"} className="text-xs">
+                            {value ? "Permitido" : "Negado"}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {profile?.specialty && (
+                  <div className="space-y-2">
+                    <Label>Especialidade</Label>
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-sm">{profile.specialty}</p>
+                    </div>
+                  </div>
+                )}
+
+                {(profile?.work_start_time || profile?.work_end_time) && (
+                  <div className="space-y-2">
+                    <Label>Horário de Trabalho</Label>
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-sm">
+                        {profile.work_start_time} - {profile.work_end_time}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Preferências */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Palette className="h-5 w-5" />
-                Preferências
+                <Bell className="h-5 w-5" />
+                Preferências do Sistema
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">

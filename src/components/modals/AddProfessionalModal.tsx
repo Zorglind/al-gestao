@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 interface AddProfessionalModalProps {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 export function AddProfessionalModal({ open, onClose }: AddProfessionalModalProps) {

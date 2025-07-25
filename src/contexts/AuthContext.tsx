@@ -9,6 +9,22 @@ export interface UserProfile {
   role: 'admin' | 'professional';
   avatar_url?: string;
   phone?: string;
+  specialty?: string;
+  work_start_time?: string;
+  work_end_time?: string;
+  permissions?: {
+    dashboard: boolean;
+    clients: boolean;
+    agenda: boolean;
+    services: boolean;
+    products: boolean;
+    financial: boolean;
+    anamnesis: boolean;
+    professionals: boolean;
+    exports: boolean;
+    profile: boolean;
+  };
+  created_by_admin?: string;
   is_active: boolean;
 }
 
@@ -22,6 +38,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   hasPermission: (permission: string) => boolean;
   isAdmin: boolean;
+  isProfessional: boolean;
+  getUserTypeDisplay: () => string;
   loading: boolean;
 }
 
@@ -41,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -54,7 +72,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      return data;
+      // Type conversion from database to our interface
+      const profile: UserProfile = {
+        id: data.id,
+        user_id: data.user_id,
+        name: data.name,
+        role: data.role,
+        avatar_url: data.avatar_url,
+        phone: data.phone,
+        specialty: data.specialty,
+        work_start_time: data.work_start_time,
+        work_end_time: data.work_end_time,
+        permissions: typeof data.permissions === 'object' && data.permissions !== null 
+          ? data.permissions as any
+          : {
+              dashboard: true,
+              clients: true,
+              agenda: true,
+              services: data.role === 'admin',
+              products: data.role === 'admin',
+              financial: data.role === 'admin',
+              anamnesis: true,
+              professionals: data.role === 'admin',
+              exports: data.role === 'admin',
+              profile: true
+            },
+        created_by_admin: data.created_by_admin,
+        is_active: data.is_active
+      };
+
+      return profile;
     } catch (error) {
       console.error('Error in fetchProfile:', error);
       return null;
@@ -172,13 +219,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Check if user has specific permission
   const hasPermission = (permission: string): boolean => {
     if (!profile || !profile.is_active) return false;
-    const permissions = getPermissionsByRole(profile.role);
-    return permissions.includes(permission);
+    
+    // Admins have all permissions
+    if (profile.role === 'admin') return true;
+    
+    // For professionals, check specific permissions from the database
+    if (profile.role === 'professional' && profile.permissions) {
+      return profile.permissions[permission as keyof typeof profile.permissions] || false;
+    }
+    
+    return false;
   };
 
+  // Check if user is admin
   const isAdmin = profile?.role === 'admin' && profile?.is_active;
+  
+  // Check if user is professional
+  const isProfessional = profile?.role === 'professional' && profile?.is_active;
+  
+  // Get user type display string
+  const getUserTypeDisplay = (): string => {
+    if (!profile) return '';
+    
+    if (profile.role === 'admin') {
+      return profile.created_by_admin ? 'Administrador (Criado por Admin)' : 'Administrador';
+    }
+    
+    if (profile.role === 'professional') {
+      return 'Profissional com Permissões Limitadas';
+    }
+    
+    return 'Usuário';
+  };
 
   return (
     <AuthContext.Provider value={{
@@ -191,6 +266,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!user && !!profile && profile.is_active,
       hasPermission,
       isAdmin,
+      isProfessional,
+      getUserTypeDisplay,
       loading
     }}>
       {children}

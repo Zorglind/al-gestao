@@ -341,35 +341,50 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          created_by_admin: string | null
           id: string
           is_active: boolean
           name: string
+          permissions: Json | null
           phone: string | null
           role: Database["public"]["Enums"]["app_role"]
+          specialty: string | null
           updated_at: string
           user_id: string
+          work_end_time: string | null
+          work_start_time: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          created_by_admin?: string | null
           id?: string
           is_active?: boolean
           name: string
+          permissions?: Json | null
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          specialty?: string | null
           updated_at?: string
           user_id: string
+          work_end_time?: string | null
+          work_start_time?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          created_by_admin?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          permissions?: Json | null
           phone?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          specialty?: string | null
           updated_at?: string
           user_id?: string
+          work_end_time?: string | null
+          work_start_time?: string | null
         }
         Relationships: []
       }
@@ -420,12 +435,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_professional_user: {
+        Args: {
+          user_email: string
+          user_password: string
+          user_name: string
+          user_specialty?: string
+          user_phone?: string
+          work_start?: string
+          work_end?: string
+          user_permissions?: Json
+        }
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      has_permission: {
+        Args: { permission_name: string }
+        Returns: boolean
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      update_professional_permissions: {
+        Args: { professional_user_id: string; new_permissions: Json }
         Returns: boolean
       }
     }
