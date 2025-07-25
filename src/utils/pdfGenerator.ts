@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export interface ClientData {
-  id: number;
+  id: string;
   nome: string;
   telefone: string;
   email: string;

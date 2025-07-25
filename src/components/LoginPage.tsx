@@ -11,10 +11,10 @@ import logoImage from "@/assets/al-gestao-logo.png";
 import { BRAND } from "@/constants/branding";
 
 interface LoginPageProps {
-  onLogin: (email: string, password: string) => Promise<boolean>;
+  onLogin?: (email: string, password: string) => Promise<boolean>;
 }
 
-const LoginPage = ({ onLogin }: LoginPageProps) => {
+const LoginPage = ({ onLogin }: LoginPageProps = {}) => {
   const { login, signUp } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

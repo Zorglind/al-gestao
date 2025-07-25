@@ -8,13 +8,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
 interface Service {
-  id: number;
-  nome: string;
-  categoria: string;
-  duracao: number;
-  valor: number;
-  ativo: boolean;
-  descricao: string;
+  id: string;
+  name: string;
+  category: string;
+  duration: number;
+  price: number;
+  is_active: boolean;
+  description?: string;
+  commission_percentage?: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface EditServiceModalProps {
@@ -45,12 +49,12 @@ export function EditServiceModal({ open, onClose, service }: EditServiceModalPro
   useEffect(() => {
     if (service) {
       setFormData({
-        nome: service.nome,
-        categoria: service.categoria,
-        descricao: service.descricao,
-        duracao: service.duracao.toString(),
-        valor: service.valor.toString(),
-        comissao: "0"
+        nome: service.name,
+        categoria: service.category,
+        descricao: service.description || "",
+        duracao: service.duration.toString(),
+        valor: service.price.toString(),
+        comissao: (service.commission_percentage || 0).toString()
       });
     }
   }, [service]);

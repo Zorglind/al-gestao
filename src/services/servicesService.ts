@@ -112,7 +112,12 @@ export const servicesService = {
     }
   },
 
-  async toggleActive(id: string): Promise<Service> {
+  async toggleActive(id: string, checked?: boolean): Promise<Service> {
+    // If checked is provided, use it; otherwise toggle current state
+    if (checked !== undefined) {
+      return this.update(id, { is_active: checked });
+    }
+    
     // First get current state
     const service = await this.getById(id);
     if (!service) throw new Error('Service not found');
