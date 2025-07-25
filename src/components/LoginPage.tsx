@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Lock, User, Eye, EyeOff, AtSign, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import logoImage from "@/assets/sol-lima-logo.jpg";
+import logoImage from "@/assets/al-gestao-logo.png";
+import { BRAND } from "@/constants/branding";
 
 interface LoginPageProps {
   onLogin: (email: string, password: string) => Promise<boolean>;
@@ -72,7 +73,7 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
       if (success) {
         toast({
           title: "Login realizado",
-          description: `Bem-vindo ao sistema Sol Lima!`
+          description: `Bem-vindo ao ${BRAND.name}!`
         });
       } else {
         toast({
@@ -186,13 +187,13 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
         <div className="text-center mb-8">
           <img 
             src={logoImage} 
-            alt="Sol Lima Tricologia" 
+            alt={BRAND.name} 
             className="w-32 h-16 mx-auto mb-4 object-contain rounded-lg shadow-lg"
           />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-sol-lima-gold bg-clip-text text-transparent">
-            Sol Lima Tricologia
+            {BRAND.name}
           </h1>
-          <p className="text-muted-foreground mt-2">Sistema de Gestão Interno</p>
+          <p className="text-muted-foreground mt-2">{BRAND.tagline}</p>
         </div>
 
         <Card className="shadow-xl border-primary/20">
@@ -201,7 +202,7 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
               Acesso Profissional
             </CardTitle>
             <CardDescription className="text-center">
-              Sol Lima Tricologia
+              {BRAND.name}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -400,7 +401,7 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
         </Card>
 
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>© 2024 Sol Lima Tricologia. Todos os direitos reservados.</p>
+          <p>© 2024 {BRAND.name}. Todos os direitos reservados.</p>
         </div>
       </div>
     </div>

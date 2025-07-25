@@ -17,3 +17,13 @@ export function useIsMobile() {
 
   return !!isMobile
 }
+
+export function useSidebarAutoCollapse(isActive: boolean) {
+  React.useEffect(() => {
+    if (isActive && window.innerWidth < MOBILE_BREAKPOINT) {
+      // Auto-collapse sidebar on mobile navigation
+      const event = new CustomEvent('sidebar-auto-collapse');
+      window.dispatchEvent(event);
+    }
+  }, [isActive]);
+}

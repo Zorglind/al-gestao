@@ -15,9 +15,13 @@ import Catalogo from "@/pages/Catalogo";
 import Exportacoes from "@/pages/Exportacoes";
 import MeuPerfil from "@/pages/MeuPerfil";
 import Financeiro from "@/pages/Financeiro";
-import logoImage from "@/assets/sol-lima-logo.jpg";
-import { LogOut, Bell } from "lucide-react";
+import logoImage from "@/assets/al-gestao-logo.png";
+import { LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NotificationProvider } from "@/contexts/NotificationContext";
+import { NotificationDropdown } from "@/components/NotificationDropdown";
+import { BRAND } from "@/constants/branding";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -35,53 +39,62 @@ const Index = () => {
     return <LoginPage onLogin={handleLogin} />;
   }
 
+  const isMobile = useIsMobile();
+
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-secondary/20 to-background">
-        <AppSidebar />
-        
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="bg-white/90 backdrop-blur-sm border-b border-border sticky top-0 z-40">
-            <div className="flex items-center justify-between px-6 py-4">
-              <div className="flex items-center space-x-4">
-                <SidebarTrigger />
-                <div className="flex items-center space-x-3">
-                  <img 
-                    src={logoImage} 
-                    alt="Sol Lima" 
-                    className="w-10 h-5 object-contain"
-                  />
-                  <div>
-                    <h1 className="text-lg font-bold text-primary">Sol Lima Tricologia</h1>
-                    <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
-                  </div>
+    <NotificationProvider>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-secondary/20 to-background">
+          <AppSidebar />
+          
+          <div className="flex-1 flex flex-col">
+            {/* Header */}
+            <header className="bg-white/90 backdrop-blur-sm border-b border-border sticky top-0 z-40">
+              <div className="flex items-center justify-between px-6 py-4">
+                <div className="flex items-center space-x-4">
+                  <SidebarTrigger />
+                  {!isMobile && (
+                    <div className="flex items-center space-x-3">
+                      <img 
+                        src={logoImage} 
+                        alt={BRAND.name} 
+                        className="w-10 h-5 object-contain"
+                      />
+                      <div>
+                        <h1 className="text-lg font-bold text-primary">{BRAND.shortName}</h1>
+                        <p className="text-xs text-muted-foreground">{BRAND.tagline}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {!isMobile && (
+                    <div className="text-right mr-3">
+                      <p className="text-sm font-medium text-primary flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        {user.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {user.role === 'admin' ? 'Administrador' : 'Profissional'} • {new Date().toLocaleDateString('pt-BR', { 
+                          weekday: 'long', 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </p>
+                    </div>
+                  )}
+                  
+                  <NotificationDropdown />
+                  
+                  <Button variant="outline" onClick={handleLogout} size="sm" className="flex items-center gap-1">
+                    <LogOut className="h-4 w-4" />
+                    {!isMobile && <span>Sair</span>}
+                  </Button>
                 </div>
               </div>
-              
-               <div className="flex items-center space-x-4">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-primary">Olá, {user.name}!</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user.role === 'admin' ? 'Administrador' : 'Profissional'} • {new Date().toLocaleDateString('pt-BR', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </p>
-                </div>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-4 w-4" />
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs"></span>
-                </Button>
-                <Button variant="outline" onClick={handleLogout} size="sm">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sair
-                </Button>
-              </div>
-            </div>
-          </header>
+            </header>
 
           {/* Main Content */}
           <main className="flex-1 p-6">
@@ -102,6 +115,7 @@ const Index = () => {
         </div>
       </div>
     </SidebarProvider>
+    </NotificationProvider>
   );
 };
 

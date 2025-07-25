@@ -1,6 +1,7 @@
 
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   LayoutDashboard,
   Users,
@@ -25,7 +26,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import logoImage from "@/assets/sol-lima-logo.jpg";
+import logoImage from "@/assets/al-gestao-logo.png";
+import { BRAND } from "@/constants/branding";
+import * as React from "react";
 
 const menuItems = [
   {
@@ -97,12 +100,20 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const currentPath = location.pathname;
   const { hasPermission, user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const isMobile = useIsMobile();
+
+  // Auto-collapse sidebar on mobile navigation
+  React.useEffect(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }, [location.pathname, isMobile, setOpenMobile]);
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
@@ -125,13 +136,13 @@ export function AppSidebar() {
           <div className="flex items-center space-x-3">
             <img 
               src={logoImage} 
-              alt="Sol Lima" 
+              alt={BRAND.name} 
               className="w-10 h-5 object-contain"
             />
             {!collapsed && (
               <div>
-                <h2 className="text-lg font-bold text-white">Sol Lima</h2>
-                <p className="text-xs text-slate-300">Sistema de Gestão</p>
+                <h2 className="text-lg font-bold text-white">{BRAND.shortName}</h2>
+                <p className="text-xs text-slate-300">{BRAND.tagline}</p>
               </div>
             )}
           </div>
@@ -150,6 +161,12 @@ export function AppSidebar() {
                         to={item.url} 
                         end={item.url === "/"} 
                         className={getNavCls}
+                        onClick={() => {
+                          // Auto-collapse on mobile after navigation
+                          if (isMobile) {
+                            setOpenMobile(false);
+                          }
+                        }}
                       >
                         <item.icon className="h-4 w-4" />
                         {!collapsed && <span>{item.title}</span>}

@@ -9,22 +9,33 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Building, Phone, Mail, MapPin, Palette, Clock, Upload, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { BRAND } from "@/constants/branding";
+import * as React from "react";
 
 const MeuPerfil = () => {
   const { toast } = useToast();
   const [tema, setTema] = useState("claro");
   const [notificacoes, setNotificacoes] = useState(true);
+  const [profilePhoto, setProfilePhoto] = useState<string>("");
+
+  // Load profile photo from localStorage on mount
+  React.useEffect(() => {
+    const savedPhoto = localStorage.getItem('profilePhoto');
+    if (savedPhoto) {
+      setProfilePhoto(savedPhoto);
+    }
+  }, []);
   
   const [perfil, setPerfil] = useState({
     nome: "Ana Silva",
-    empresa: "Sol Lima Tricologia",
-    email: "ana@sollimatricologia.com.br",
+    empresa: BRAND.name,
+    email: "ana@algestao.com.br",
     telefone: "(11) 99999-9999",
     endereco: "Rua das Flores, 123 - São Paulo, SP",
     cnpj: "12.345.678/0001-90",
     horarioInicio: "08:00",
     horarioFim: "18:00",
-    bio: "Especialista em tricologia com 10 anos de experiência em tratamentos capilares para cabelos crespos e cacheados."
+    bio: "Profissional especializada em gestão e atendimento empresarial com foco em excelência operacional."
   });
 
   const servicosOferecidos = [
@@ -36,9 +47,9 @@ const MeuPerfil = () => {
   ];
 
   const redesSociais = [
-    { rede: "Instagram", usuario: "@sollima_tricologia" },
+    { rede: "Instagram", usuario: "@algestao_interna" },
     { rede: "WhatsApp", usuario: "(11) 99999-9999" },
-    { rede: "Facebook", usuario: "Sol Lima Tricologia" },
+    { rede: "Facebook", usuario: BRAND.name },
   ];
 
   const handleInputChange = (field: string, value: string) => {
@@ -57,11 +68,26 @@ const MeuPerfil = () => {
   };
 
   const handlePhotoUpload = () => {
-    console.log("Abrir seletor de arquivo");
-    toast({
-      title: "Upload de foto",
-      description: "Funcionalidade de upload será implementada em breve.",
-    });
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          setProfilePhoto(result);
+          localStorage.setItem('profilePhoto', result);
+          toast({
+            title: "Foto atualizada!",
+            description: "Sua foto de perfil foi alterada com sucesso.",
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
   };
 
   return (
@@ -224,7 +250,7 @@ const MeuPerfil = () => {
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <Avatar className="w-24 h-24 mx-auto">
-                <AvatarImage src="" />
+                <AvatarImage src={profilePhoto} />
                 <AvatarFallback className="text-lg">AS</AvatarFallback>
               </Avatar>
               <Button variant="outline" className="w-full" onClick={handlePhotoUpload}>

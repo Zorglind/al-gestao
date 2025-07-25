@@ -26,7 +26,8 @@ import {
   Edit3,
   X
 } from "lucide-react";
-import logoImage from "@/assets/sol-lima-logo.jpg";
+import { BRAND } from "@/constants/branding";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 interface DashboardProps {
   professionalName: string;
@@ -36,11 +37,7 @@ interface DashboardProps {
 const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
   const navigate = useNavigate();
   const [busca, setBusca] = useState("");
-  const [lembretes, setLembretes] = useState([
-    "Parabéns! Você bateu sua meta do mês!",
-    "Lembre-se: Agenda da Ana às 14h hoje",
-    "Novo produto chegou no estoque"
-  ]);
+  const { notifications, addNotification, removeNotification } = useNotifications();
   const [novoLembrete, setNovoLembrete] = useState("");
   const [currentTime] = useState(new Date());
   
@@ -75,13 +72,13 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
 
   const adicionarLembrete = () => {
     if (novoLembrete.trim()) {
-      setLembretes([...lembretes, novoLembrete]);
+      addNotification(novoLembrete);
       setNovoLembrete("");
     }
   };
 
   const removerLembrete = (index: number) => {
-    setLembretes(lembretes.filter((_, i) => i !== index));
+    removeNotification(index);
   };
 
   const cadastrarCliente = () => {
@@ -114,48 +111,6 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header fixo com botão sair */}
-      <header className="bg-white border-b border-border sticky top-0 z-40 shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <img 
-              src={logoImage} 
-              alt="Sol Lima" 
-              className="w-12 h-6 object-contain"
-            />
-            <div>
-              <h1 className="text-xl font-bold text-primary">Sol Lima Tricologia</h1>
-              <p className="text-sm text-muted-foreground">Sistema de Gestão</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="text-sm font-medium text-primary flex items-center gap-2">
-                <User className="h-4 w-4" />
-                {professionalName}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {currentTime.toLocaleDateString('pt-BR', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </p>
-            </div>
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-4 w-4" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs"></span>
-            </Button>
-            <Button variant="outline" onClick={onLogout} className="flex items-center gap-2">
-              <LogOut className="h-4 w-4" />
-              Sair
-            </Button>
-          </div>
-        </div>
-      </header>
-
       <div className="container mx-auto px-4 py-6">
         {/* Botões de Ação Rápida do Dashboard */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -445,9 +400,9 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
                 </div>
                 
                 <div className="space-y-2">
-                  {lembretes.map((lembrete, index) => (
+                  {notifications.map((notification, index) => (
                     <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
-                      <span className="text-muted-foreground">{lembrete}</span>
+                      <span className="text-muted-foreground">{notification}</span>
                       <Button
                         variant="ghost"
                         size="sm"
