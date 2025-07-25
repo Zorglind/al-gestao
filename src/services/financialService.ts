@@ -6,7 +6,11 @@ export interface FinancialEntry {
   description: string;
   amount: number;
   category: string;
+  subcategory: string;
   date: string;
+  time: string;
+  payment_method: string;
+  observations: string;
   appointment_id?: string;
   created_by: string;
   created_at: string;
@@ -18,7 +22,11 @@ export interface CreateFinancialEntryData {
   description: string;
   amount: number;
   category: string;
+  subcategory: string;
   date: string;
+  time: string;
+  payment_method: string;
+  observations: string;
   appointment_id?: string;
 }
 
@@ -26,9 +34,87 @@ export interface UpdateFinancialEntryData {
   description?: string;
   amount?: number;
   category?: string;
+  subcategory?: string;
   date?: string;
+  time?: string;
+  payment_method?: string;
+  observations?: string;
   appointment_id?: string;
 }
+
+// Fixed categories and subcategories
+export const FINANCIAL_CATEGORIES = {
+  income: {
+    produto: ['produto'],
+    servico: ['servico'],
+    pacote: ['pacote']
+  },
+  expense: {
+    despesas_fixas: ['aluguel', 'contador', 'internet', 'seguranca'],
+    despesas_variaveis: ['compra_produto', 'descartaveis', 'limpeza', 'luz', 'manutencao', 'papelaria', 'telefone', 'toalhas'],
+    despesas_pessoal: ['alimentacao', 'bonificacao', 'pagamento_profissional', 'pro_labore', 'passagem_vale_transporte', 'vale_adiantamento_profissional', 'investimento_treinamentos'],
+    impostos: ['imposto_municipal', 'imposto_estadual', 'imposto_federal'],
+    outras_despesas: [],
+    reserva_financeira: []
+  }
+} as const;
+
+export const PAYMENT_METHODS = ['dinheiro', 'cartao', 'pix', 'transferencia', 'outros'] as const;
+
+export const CATEGORY_LABELS: Record<string, string> = {
+  // Income
+  produto: 'Produto',
+  servico: 'Serviço', 
+  pacote: 'Pacote',
+  // Expenses
+  despesas_fixas: 'Despesas Fixas',
+  despesas_variaveis: 'Despesas Variáveis',
+  despesas_pessoal: 'Despesas de Pessoal',
+  impostos: 'Impostos',
+  outras_despesas: 'Outras Despesas',
+  reserva_financeira: 'Reserva Financeira'
+};
+
+export const SUBCATEGORY_LABELS: Record<string, string> = {
+  // Income subcategories
+  produto: 'Produto',
+  servico: 'Serviço',
+  pacote: 'Pacote',
+  // Fixed expenses
+  aluguel: 'Aluguel',
+  contador: 'Contador',
+  internet: 'Internet',
+  seguranca: 'Segurança',
+  // Variable expenses
+  compra_produto: 'Compra de Produto',
+  descartaveis: 'Descartáveis',
+  limpeza: 'Limpeza',
+  luz: 'Luz',
+  manutencao: 'Manutenção',
+  papelaria: 'Papelaria',
+  telefone: 'Telefone',
+  toalhas: 'Toalhas',
+  // Personnel expenses
+  alimentacao: 'Alimentação',
+  bonificacao: 'Bonificação',
+  pagamento_profissional: 'Pagamento Profissional',
+  pro_labore: 'Pró-Labore',
+  passagem_vale_transporte: 'Passagem/Vale Transporte',
+  vale_adiantamento_profissional: 'Vale/Adiantamento Profissional',
+  investimento_treinamentos: 'Investimento em Treinamentos',
+  // Taxes
+  imposto_municipal: 'Imposto Municipal',
+  imposto_estadual: 'Imposto Estadual',
+  imposto_federal: 'Imposto Federal'
+};
+
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  dinheiro: 'Dinheiro',
+  cartao: 'Cartão',
+  pix: 'PIX',
+  transferencia: 'Transferência',
+  outros: 'Outros'
+};
 
 export const financialService = {
   async getAll(): Promise<FinancialEntry[]> {

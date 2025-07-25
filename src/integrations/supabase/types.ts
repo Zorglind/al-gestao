@@ -219,6 +219,10 @@ export type Database = {
           date: string
           description: string
           id: string
+          observations: string
+          payment_method: string
+          subcategory: string
+          time: string
           type: Database["public"]["Enums"]["entry_type"]
           updated_at: string
         }
@@ -231,6 +235,10 @@ export type Database = {
           date: string
           description: string
           id?: string
+          observations?: string
+          payment_method?: string
+          subcategory?: string
+          time?: string
           type: Database["public"]["Enums"]["entry_type"]
           updated_at?: string
         }
@@ -243,6 +251,10 @@ export type Database = {
           date?: string
           description?: string
           id?: string
+          observations?: string
+          payment_method?: string
+          subcategory?: string
+          time?: string
           type?: Database["public"]["Enums"]["entry_type"]
           updated_at?: string
         }
