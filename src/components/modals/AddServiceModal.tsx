@@ -6,14 +6,20 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { servicesService } from '@/services/servicesService';
+import { Upload, Loader2 } from "lucide-react";
 
 interface AddServiceModalProps {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function AddServiceModal({ open, onClose }: AddServiceModalProps) {
+export function AddServiceModal({ open, onClose, onSuccess }: AddServiceModalProps) {
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     categoria: "",
     subcategoria: "",
@@ -32,26 +38,63 @@ export function AddServiceModal({ open, onClose }: AddServiceModalProps) {
     "Tratamento"
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Serviço adicionado:", formData);
+    setLoading(true);
     
-    toast({
-      title: "Serviço adicionado!",
-      description: `${formData.nome} foi cadastrado com sucesso.`,
-    });
-    
-    setFormData({
-      categoria: "",
-      subcategoria: "",
-      nome: "",
-      descricao: "",
-      preco: "",
-      duracao: "",
-      comissao: ""
-    });
-    
-    onClose();
+    try {
+      const serviceData = {
+        name: formData.nome,
+        category: formData.categoria,
+        description: formData.descricao,
+        price: parseFloat(formData.preco),
+        duration: parseInt(formData.duracao),
+        commission_percentage: formData.comissao ? parseFloat(formData.comissao) : 0
+      };
+
+      await servicesService.create(serviceData);
+      
+      toast({
+        title: "Serviço adicionado!",
+        description: `${formData.nome} foi cadastrado com sucesso.`,
+      });
+      
+      setFormData({
+        categoria: "",
+        subcategoria: "",
+        nome: "",
+        descricao: "",
+        preco: "",
+        duracao: "",
+        comissao: ""
+      });
+      setImageFile(null);
+      setImagePreview(null);
+      
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      console.error('Error creating service:', error);
+      toast({
+        title: "Erro ao criar serviço",
+        description: "Não foi possível criar o serviço. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -107,6 +150,30 @@ export function AddServiceModal({ open, onClose }: AddServiceModalProps) {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="image">Imagem do Serviço</Label>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <Input
+                  id="image"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="cursor-pointer"
+                />
+              </div>
+              {imagePreview && (
+                <div className="w-16 h-16 rounded-lg overflow-hidden border">
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="preco">Preço (R$) *</Label>
@@ -143,11 +210,18 @@ export function AddServiceModal({ open, onClose }: AddServiceModalProps) {
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Adicionar Serviço
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                'Adicionar Serviço'
+              )}
             </Button>
           </div>
         </form>

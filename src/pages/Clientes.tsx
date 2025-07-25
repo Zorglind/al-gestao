@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Search, Upload, UserPlus, MessageCircle, FileText, Users, Calendar, TrendingUp, Trash2 } from "lucide-react";
+import { Search, Upload, UserPlus, MessageCircle, FileText, Users, Calendar, TrendingUp, Trash2, History } from "lucide-react";
 import { AddClientModal } from "@/components/modals/AddClientModal";
 import { DeleteClientModal } from "@/components/modals/DeleteClientModal";
+import { ClientHistoryModal } from "@/components/modals/ClientHistoryModal";
 import { useDropzone } from 'react-dropzone';
 import { generateClientPDF } from '@/utils/pdfGenerator';
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +27,8 @@ const Clientes = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddClientModal, setShowAddClientModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showClientHistoryModal, setShowClientHistoryModal] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [clientToDelete, setClientToDelete] = useState<ClientData | null>(null);
 
   const [clientes, setClientes] = useState<ClientData[]>([
@@ -297,6 +300,18 @@ const Clientes = () => {
                         <FileText className="h-4 w-4 mr-1" />
                         PDF
                       </Button>
+                      <Button 
+                        onClick={() => {
+                          setSelectedClientId(cliente.id.toString());
+                          setShowClientHistoryModal(true);
+                        }}
+                        variant="outline" 
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        <History className="h-4 w-4 mr-1" />
+                        Histórico
+                      </Button>
                     </div>
                     <Button 
                       onClick={() => handleDeleteClient(cliente)} 
@@ -334,6 +349,15 @@ const Clientes = () => {
         onClose={() => setShowDeleteModal(false)}
         onConfirm={confirmDeleteClient}
         clientName={clientToDelete?.nome || ""}
+      />
+      
+      <ClientHistoryModal
+        open={showClientHistoryModal}
+        onClose={() => {
+          setShowClientHistoryModal(false);
+          setSelectedClientId(null);
+        }}
+        clientId={selectedClientId}
       />
     </div>
   );

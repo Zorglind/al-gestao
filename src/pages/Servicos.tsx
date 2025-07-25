@@ -226,6 +226,7 @@ const Servicos = () => {
       <AddServiceModal 
         open={showAddServiceModal} 
         onClose={() => setShowAddServiceModal(false)}
+        onSuccess={handleAddService}
       />
       
       <EditServiceModal 
