@@ -24,7 +24,7 @@ import { BRAND } from "@/constants/branding";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, profile, logout, isAuthenticated, loading } = useAuth();
 
   const handleLogin = async (email: string, password: string) => {
     // This function won't be used since LoginPage handles auth directly
@@ -35,7 +35,18 @@ const Index = () => {
     logout();
   };
 
-  if (!isAuthenticated || !user) {
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user || !profile) {
     return <LoginPage onLogin={handleLogin} />;
   }
 
@@ -73,10 +84,10 @@ const Index = () => {
                     <div className="text-right mr-3">
                       <p className="text-sm font-medium text-primary flex items-center gap-2">
                         <User className="h-4 w-4" />
-                        {user.name}
+                        {profile.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {user.role === 'admin' ? 'Administrador' : 'Profissional'} • {new Date().toLocaleDateString('pt-BR', { 
+                        {profile.role === 'admin' ? 'Administrador' : 'Profissional'} • {new Date().toLocaleDateString('pt-BR', { 
                           weekday: 'long', 
                           year: 'numeric', 
                           month: 'long', 
@@ -99,7 +110,7 @@ const Index = () => {
           {/* Main Content */}
           <main className="flex-1 p-6">
             <Routes>
-              <Route path="/" element={<DashboardPage professionalName={user.name} onLogout={handleLogout} />} />
+              <Route path="/" element={<DashboardPage professionalName={profile.name} onLogout={handleLogout} />} />
               <Route path="/profissionais" element={<Profissionais />} />
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/agenda" element={<Agenda />} />

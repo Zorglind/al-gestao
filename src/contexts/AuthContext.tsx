@@ -1,103 +1,196 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 
-export interface User {
+export interface UserProfile {
   id: string;
+  user_id: string;
   name: string;
-  email: string;
   role: 'admin' | 'professional';
-  permissions: string[];
-  isActive: boolean;
+  avatar_url?: string;
+  phone?: string;
+  is_active: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  profile: UserProfile | null;
+  session: Session | null;
+  login: (email: string, password: string) => Promise<{ error?: any }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error?: any }>;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   hasPermission: (permission: string) => boolean;
+  isAdmin: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Administrador',
-    email: 'admin@sollima.com',
-    role: 'admin',
-    permissions: ['dashboard', 'profissionais', 'clientes', 'agenda', 'anamnese', 'produtos', 'servicos', 'catalogo', 'financeiro', 'exportacoes', 'perfil'],
-    isActive: true
-  },
-  {
-    id: '2',
-    name: 'Ana Santos',
-    email: 'profissional@sollima.com',
-    role: 'professional',
-    permissions: ['dashboard', 'clientes', 'agenda', 'anamnese', 'catalogo'],
-    isActive: true
-  },
-  {
-    id: '3',
-    name: 'Maria Oliveira',
-    email: 'teste@sollima.com',
-    role: 'professional',
-    permissions: ['dashboard', 'clientes', 'agenda'],
-    isActive: true
+// Permission mapping based on role
+const getPermissionsByRole = (role: 'admin' | 'professional'): string[] => {
+  if (role === 'admin') {
+    return ['dashboard', 'profissionais', 'clientes', 'agenda', 'anamnese', 'produtos', 'servicos', 'catalogo', 'financeiro', 'exportacoes', 'perfil'];
   }
-];
+  return ['dashboard', 'clientes', 'agenda', 'anamnese', 'catalogo', 'perfil'];
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Verifica se há um usuário logado no localStorage
-    const savedUser = localStorage.getItem('user');
-    console.log('AuthContext: Checking saved user:', savedUser);
-    if (savedUser) {
-      const userData = JSON.parse(savedUser);
-      console.log('AuthContext: Setting user from localStorage:', userData);
-      setUser(userData);
-    }
-  }, []);
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-  const login = async (emailOrCpf: string, password: string): Promise<boolean> => {
-    console.log('AuthContext: Login attempt for:', emailOrCpf);
-    // Find user by email or test with predefined passwords
-    const foundUser = mockUsers.find(u => 
-      u.email === emailOrCpf && u.isActive
-    );
-    
-    console.log('AuthContext: Found user:', foundUser);
-    
-    if (foundUser && password === "123456") {
-      console.log('AuthContext: Login successful, setting user');
-      setUser(foundUser);
-      localStorage.setItem('user', JSON.stringify(foundUser));
-      return true;
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error in fetchProfile:', error);
+      return null;
     }
-    
-    console.log('AuthContext: Login failed');
-    return false;
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Defer profile fetch to avoid deadlock
+          setTimeout(async () => {
+            const profileData = await fetchProfile(session.user.id);
+            setProfile(profileData);
+            setLoading(false);
+          }, 0);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        // Defer profile fetch to avoid deadlock
+        setTimeout(async () => {
+          const profileData = await fetchProfile(session.user.id);
+          setProfile(profileData);
+          setLoading(false);
+        }, 0);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        setLoading(false);
+        return { error };
+      }
+
+      return {};
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoading(false);
+      return { error };
+    }
+  };
+
+  const signUp = async (email: string, password: string, name: string) => {
+    try {
+      setLoading(true);
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            name: name
+          }
+        }
+      });
+
+      if (error) {
+        console.error('Sign up error:', error);
+        setLoading(false);
+        return { error };
+      }
+
+      return {};
+    } catch (error) {
+      console.error('Sign up error:', error);
+      setLoading(false);
+      return { error };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+      }
+      // State will be cleared by the auth state change listener
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const hasPermission = (permission: string): boolean => {
-    const hasAccess = user?.permissions.includes(permission) || false;
-    console.log(`AuthContext: Permission check for ${permission}:`, hasAccess, 'User:', user?.name);
-    return hasAccess;
+    if (!profile || !profile.is_active) return false;
+    const permissions = getPermissionsByRole(profile.role);
+    return permissions.includes(permission);
   };
+
+  const isAdmin = profile?.role === 'admin' && profile?.is_active;
 
   return (
     <AuthContext.Provider value={{
       user,
+      profile,
+      session,
       login,
+      signUp,
       logout,
-      isAuthenticated: !!user,
-      hasPermission
+      isAuthenticated: !!user && !!profile && profile.is_active,
+      hasPermission,
+      isAdmin,
+      loading
     }}>
       {children}
     </AuthContext.Provider>

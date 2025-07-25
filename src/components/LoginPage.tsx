@@ -15,8 +15,8 @@ interface LoginPageProps {
 }
 
 const LoginPage = ({ onLogin }: LoginPageProps) => {
-  const { login } = useAuth();
-  const [emailOrCpf, setEmailOrCpf] = useState("");
+  const { login, signUp } = useAuth();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +26,6 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
   // Estados para cadastro
   const [registerData, setRegisterData] = useState({
     name: "",
-    cpf: "",
     email: "",
     password: "",
     confirmPassword: ""
@@ -37,19 +36,13 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
   
   const { toast } = useToast();
 
-  const validateEmailOrCpf = (value: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const cpfRegex = /^\d{11}$/;
-    return emailRegex.test(value) || cpfRegex.test(value);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateEmailOrCpf(emailOrCpf)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       toast({
         title: "Erro de validação",
-        description: "Digite um e-mail válido ou CPF com 11 dígitos",
+        description: "Digite um e-mail válido",
         variant: "destructive"
       });
       return;
@@ -67,19 +60,32 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
     setIsLoading(true);
     
     try {
-      // Use the AuthContext login function
-      const success = await login(emailOrCpf, password);
+      const { error } = await login(email, password);
       
-      if (success) {
+      if (error) {
+        if (error.message?.includes('Invalid login credentials')) {
+          toast({
+            title: "Erro de autenticação",
+            description: "Email ou senha incorretos. Verifique suas credenciais.",
+            variant: "destructive"
+          });
+        } else if (error.message?.includes('Email not confirmed')) {
+          toast({
+            title: "Email não confirmado",
+            description: "Por favor, confirme seu email antes de fazer login.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Erro de autenticação",
+            description: error.message || "Erro ao fazer login. Tente novamente.",
+            variant: "destructive"
+          });
+        }
+      } else {
         toast({
           title: "Login realizado",
           description: `Bem-vindo ao ${BRAND.name}!`
-        });
-      } else {
-        toast({
-          title: "Erro de autenticação",
-          description: "Usuário ou senha inválidos. Use: admin@sollima.com / senha: 123456",
-          variant: "destructive"
         });
       }
     } catch (error) {
@@ -93,22 +99,13 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (registerData.name.length < 2) {
       toast({
         title: "Erro de validação",
         description: "Nome deve ter pelo menos 2 caracteres",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (!/^\d{11}$/.test(registerData.cpf)) {
-      toast({
-        title: "Erro de validação",
-        description: "CPF deve conter 11 dígitos",
         variant: "destructive"
       });
       return;
@@ -141,21 +138,47 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
       return;
     }
     
-    // Simulate registration
-    setTimeout(() => {
+    setIsLoading(true);
+    
+    try {
+      const { error } = await signUp(registerData.email, registerData.password, registerData.name);
+      
+      if (error) {
+        if (error.message?.includes('User already registered')) {
+          toast({
+            title: "Erro de cadastro",
+            description: "Este email já está cadastrado. Tente fazer login.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Erro de cadastro",
+            description: error.message || "Erro ao criar conta. Tente novamente.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "Cadastro realizado com sucesso!",
+          description: "Verifique seu email para confirmar a conta."
+        });
+        setShowRegister(false);
+        setRegisterData({
+          name: "",
+          email: "",
+          password: "",
+          confirmPassword: ""
+        });
+      }
+    } catch (error) {
       toast({
-        title: "Cadastro realizado com sucesso!",
-        description: "Agora você pode fazer login no sistema"
+        title: "Erro de cadastro",
+        description: "Ocorreu um erro durante o cadastro. Tente novamente.",
+        variant: "destructive"
       });
-      setShowRegister(false);
-      setRegisterData({
-        name: "",
-        cpf: "",
-        email: "",
-        password: "",
-        confirmPassword: ""
-      });
-    }, 1000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = (e: React.FormEvent) => {
@@ -170,6 +193,7 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
       return;
     }
     
+    // TODO: Implement password reset with Supabase
     setTimeout(() => {
       toast({
         title: "E-mail enviado!",
@@ -208,15 +232,15 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="emailOrCpf">E-mail ou CPF</Label>
+                <Label htmlFor="email">E-mail</Label>
                 <div className="relative">
                   <AtSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="emailOrCpf"
-                    type="text"
-                    placeholder="Digite seu e-mail ou CPF"
-                    value={emailOrCpf}
-                    onChange={(e) => setEmailOrCpf(e.target.value)}
+                    id="email"
+                    type="email"
+                    placeholder="Digite seu e-mail"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
                     required
                   />
@@ -326,19 +350,6 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="cpf">CPF</Label>
-                        <Input
-                          id="cpf"
-                          type="text"
-                          placeholder="12345678901"
-                          value={registerData.cpf}
-                          onChange={(e) => setRegisterData(prev => ({ ...prev, cpf: e.target.value }))}
-                          maxLength={11}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
                         <Label htmlFor="registerEmail">E-mail</Label>
                         <Input
                           id="registerEmail"
@@ -374,8 +385,15 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
                         />
                       </div>
                       
-                      <Button type="submit" className="w-full">
-                        Cadastrar
+                      <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Cadastrando...
+                          </>
+                        ) : (
+                          "Cadastrar"
+                        )}
                       </Button>
                     </form>
                   </DialogContent>
@@ -385,16 +403,16 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
           </CardContent>
         </Card>
 
-        {/* Informações de usuários de teste */}
+        {/* Informações sobre criação de conta */}
         <Card className="mt-6 border-blue-200 bg-blue-50">
           <CardContent className="pt-4">
             <div className="text-center">
-              <h3 className="text-sm font-semibold text-blue-800 mb-2">👤 Usuários de Teste</h3>
+              <h3 className="text-sm font-semibold text-blue-800 mb-2">📝 Como começar</h3>
               <div className="space-y-1 text-xs text-blue-700">
-                <p><strong>Admin:</strong> admin@sollima.com</p>
-                <p><strong>Profissional:</strong> profissional@sollima.com</p>
-                <p><strong>Teste:</strong> teste@sollima.com</p>
-                <p className="mt-2 font-medium">🔑 Senha para todos: <code className="bg-blue-100 px-1 rounded">123456</code></p>
+                <p>1. Clique em "Criar nova conta" para se cadastrar</p>
+                <p>2. Confirme seu email (verifique spam/lixo eletrônico)</p>
+                <p>3. Faça login com suas credenciais</p>
+                <p className="mt-2 font-medium">🔒 Seus dados estão seguros com criptografia</p>
               </div>
             </div>
           </CardContent>
