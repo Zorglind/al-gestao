@@ -7,11 +7,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, User } from "lucide-react";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, useDroppable } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileAgendaGrid } from "@/components/agenda/MobileAgendaGrid";
+import { DesktopAgendaGrid } from "@/components/agenda/DesktopAgendaGrid";
+import { AgendaProvider, useAgenda } from "@/contexts/AgendaContext";
 
 // Interface para agendamentos
 interface Agendamento {
@@ -56,20 +60,20 @@ function DraggableAgendamento({ agendamento, updateStatus }: { agendamento: Agen
       style={style}
       {...attributes}
       {...listeners}
-      className={`h-16 p-2 border rounded transition-colors cursor-grab active:cursor-grabbing ${getStatusBackgroundColor(agendamento.status)} text-white border-transparent`}
+      className={`h-16 p-2 border rounded transition-colors cursor-grab active:cursor-grabbing ${getStatusBackgroundColor(agendamento.status)} text-white border-transparent shadow-sm hover:shadow-md`}
     >
-      <div className="text-xs">
+      <div className="text-xs space-y-1">
         <div className="font-semibold text-white truncate">
           {agendamento.cliente}
         </div>
         <div className="text-white/90 truncate">
-          {agendamento.servico}
+          {agendamento.horario} - {agendamento.servico}
         </div>
         <Select
           value={agendamento.status}
           onValueChange={(newStatus) => updateStatus(agendamento.id, newStatus)}
         >
-          <SelectTrigger className="h-6 text-xs bg-white/20 border-white/30 text-white">
+          <SelectTrigger className="h-5 text-xs bg-white/20 border-white/30 text-white hover:bg-white/30">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -85,8 +89,9 @@ function DraggableAgendamento({ agendamento, updateStatus }: { agendamento: Agen
   );
 }
 
-const Agenda = () => {
+const AgendaContent = () => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState("diaria");
   const [selectedProfessional, setSelectedProfessional] = useState("todos");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -110,10 +115,15 @@ const Agenda = () => {
   ]);
 
   const profissionais = ["Ana Santos", "Carlos Lima"];
-  const horarios = Array.from({ length: 13 }, (_, i) => {
-    const hora = 7 + i;
-    return `${hora.toString().padStart(2, '0')}:00`;
-  });
+  
+  // Gerar horários de 10 em 10 minutos de 07:00 às 19:00
+  const horarios = [];
+  for (let h = 7; h < 19; h++) {
+    for (let m = 0; m < 60; m += 10) {
+      const hora = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      horarios.push(hora);
+    }
+  }
 
   const filteredAgendamentos = selectedProfessional === "todos" 
     ? agendamentos 
@@ -420,59 +430,35 @@ const Agenda = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-[100px_1fr_1fr] gap-4">
-            {/* Coluna de Horários */}
-            <div className="space-y-2">
-              <div className="h-12 flex items-center justify-center font-semibold text-sm bg-muted rounded">
-                Horário
-              </div>
-              {horarios.map((hora) => (
-                <div key={hora} className="h-16 flex items-center justify-center text-sm text-muted-foreground border rounded">
-                  {hora}
-                </div>
-              ))}
-            </div>
-
-            {/* Colunas dos Profissionais */}
-            {profissionais.map((profissional) => (
-              <div key={profissional} className="space-y-2">
-                <div className="h-12 flex items-center justify-center font-semibold text-sm bg-primary text-primary-foreground rounded">
-                  <User className="h-4 w-4 mr-2" />
-                  {profissional}
-                </div>
-                <SortableContext items={agendamentos.filter(a => a.profissional === profissional).map(a => a.id)} strategy={verticalListSortingStrategy}>
-                  {horarios.map((hora) => {
-                    const agendamento = agendamentos.find(
-                      a => a.horario === hora && a.profissional === profissional
-                    );
-                    
-                    return (
-                      <div 
-                        key={`${profissional}-${hora}`}
-                        id={`${profissional}-${hora}`}
-                        className={`h-16 ${!agendamento ? 'p-2 border rounded hover:bg-gray-100 border-gray-200' : ''}`}
-                      >
-                        {agendamento ? (
-                          <DraggableAgendamento 
-                            agendamento={agendamento} 
-                            updateStatus={updateAgendamentoStatus}
-                          />
-                        ) : (
-                          <div className="h-full flex items-center justify-center text-center text-gray-400 text-xs">
-                            Disponível
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </SortableContext>
-              </div>
-            ))}
-          </div>
+          {isMobile ? (
+            <MobileAgendaGrid
+              agendamentos={agendamentos}
+              profissionais={profissionais}
+              horarios={horarios}
+              DraggableAgendamento={DraggableAgendamento}
+              updateAgendamentoStatus={updateAgendamentoStatus}
+            />
+          ) : (
+            <DesktopAgendaGrid
+              agendamentos={agendamentos}
+              profissionais={profissionais}
+              horarios={horarios}
+              DraggableAgendamento={DraggableAgendamento}
+              updateAgendamentoStatus={updateAgendamentoStatus}
+            />
+          )}
         </CardContent>
       </Card>
       </div>
     </DndContext>
+  );
+};
+
+const Agenda = () => {
+  return (
+    <AgendaProvider>
+      <AgendaContent />
+    </AgendaProvider>
   );
 };
 
