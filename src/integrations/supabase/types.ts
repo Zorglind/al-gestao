@@ -349,6 +349,60 @@ export type Database = {
         }
         Relationships: []
       }
+      professional_profiles: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          bio: string | null
+          cnpj: string | null
+          company_name: string | null
+          created_at: string
+          id: string
+          notifications_enabled: boolean | null
+          offered_services: Json | null
+          social_networks: Json | null
+          theme: string | null
+          updated_at: string
+          user_id: string
+          work_end_time: string | null
+          work_start_time: string | null
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          cnpj?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          notifications_enabled?: boolean | null
+          offered_services?: Json | null
+          social_networks?: Json | null
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+          work_end_time?: string | null
+          work_start_time?: string | null
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          cnpj?: string | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          notifications_enabled?: boolean | null
+          offered_services?: Json | null
+          social_networks?: Json | null
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+          work_end_time?: string | null
+          work_start_time?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
