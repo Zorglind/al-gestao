@@ -1,147 +1,232 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Search, Upload, UserPlus, MessageCircle, FileText, Users, Calendar, TrendingUp, Trash2, History } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Plus, Upload, MessageSquare, FileText, User, Trash2, BarChart3, Eye, Loader2 } from "lucide-react";
+import { useDropzone } from "react-dropzone";
+import { useToast } from "@/hooks/use-toast";
 import { AddClientModal } from "@/components/modals/AddClientModal";
 import { DeleteClientModal } from "@/components/modals/DeleteClientModal";
 import { ClientHistoryModal } from "@/components/modals/ClientHistoryModal";
-import { useDropzone } from 'react-dropzone';
-import { generateClientPDF } from '@/utils/pdfGenerator';
-import { useToast } from "@/hooks/use-toast";
+import { ViewClientModal } from "@/components/modals/ViewClientModal";
+import { generateClientPDF } from "@/utils/pdfGenerator";
+import { clientsService, Client } from "@/services/clientsService";
+import * as XLSX from 'xlsx';
 
-interface ClientData {
-  id: number;
-  nome: string;
-  email: string;
-  telefone: string;
-  ultimaVisita: string;
-  totalServicos: number;
-  status: 'ATIVO' | 'INATIVO';
-}
-
-const Clientes = () => {
+export default function Clientes() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [loading, setLoading] = useState(true);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showClientHistoryModal, setShowClientHistoryModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [clientToDelete, setClientToDelete] = useState<ClientData | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
-  const [clientes, setClientes] = useState<ClientData[]>([
-    { id: 1, nome: "Maria Silva", email: "maria@email.com", telefone: "(11) 99999-9999", ultimaVisita: "2024-01-15", totalServicos: 8, status: 'ATIVO' },
-    { id: 2, nome: "Ana Santos", email: "ana@email.com", telefone: "(11) 88888-8888", ultimaVisita: "2024-01-12", totalServicos: 12, status: 'ATIVO' },
-    { id: 3, nome: "Beatriz Costa", email: "beatriz@email.com", telefone: "(11) 77777-7777", ultimaVisita: "2024-01-10", totalServicos: 5, status: 'INATIVO' },
-    { id: 4, nome: "Julia Oliveira", email: "julia@email.com", telefone: "(11) 66666-6666", ultimaVisita: "2024-01-08", totalServicos: 15, status: 'ATIVO' },
-    { id: 5, nome: "Fernanda Rocha", email: "fernanda@email.com", telefone: "(11) 55555-5555", ultimaVisita: "2024-01-05", totalServicos: 3, status: 'ATIVO' },
-  ]);
-
-  const filteredClientes = clientes.filter(cliente =>
-    cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.telefone.includes(searchTerm) ||
-    cliente.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Função para processar importação de Excel (mock)
-  const processExcelImport = async (file: File): Promise<ClientData[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          { id: Date.now(), nome: "Cliente Importado", email: "importado@exemplo.com", telefone: "(11) 00000-0000", ultimaVisita: new Date().toISOString().split('T')[0], totalServicos: 0, status: 'ATIVO' }
-        ]);
-      }, 1000);
-    });
-  };
-
-  const onDrop = async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    if (file) {
-      try {
-        const importedClients = await processExcelImport(file);
-        setClientes(prev => [...prev, ...importedClients]);
-        toast({
-          title: "Importação concluída!",
-          description: `${importedClients.length} clientes foram importados.`,
-        });
-      } catch (error) {
-        toast({
-          title: "Erro na importação",
-          description: "Não foi possível processar o arquivo.",
-          variant: "destructive"
-        });
-      }
+  // Load clients from Supabase
+  const loadClients = async () => {
+    try {
+      setLoading(true);
+      const data = await clientsService.getAll();
+      setClients(data);
+    } catch (error) {
+      console.error('Erro ao carregar clientes:', error);
+      toast({
+        title: "Erro ao carregar clientes",
+        description: "Tente novamente em alguns instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const { getRootProps, getInputProps } = useDropzone({
-    onDrop,
-    accept: {
-      'text/csv': ['.csv'],
-      'application/vnd.ms-excel': ['.xls'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
-    },
-    maxFiles: 1
+  useEffect(() => {
+    loadClients();
+  }, []);
+
+  const filteredClients = clients.filter(client => {
+    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (client.phone && client.phone.includes(searchTerm));
+    
+    const matchesStatus = statusFilter === "todos" || 
+                         (statusFilter === "ativo" && client.is_active) ||
+                         (statusFilter === "inativo" && !client.is_active);
+    
+    return matchesSearch && matchesStatus;
   });
 
-  const handleWhatsApp = (telefone: string) => {
-    const phoneNumber = telefone.replace(/\D/g, '');
-    window.open(`https://wa.me/55${phoneNumber}`, '_blank');
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    // Verificar extensão do arquivo
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+      toast({
+        title: "Formato inválido",
+        description: "Por favor, selecione um arquivo Excel (.xlsx ou .xls).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: ['nome', 'telefone', 'email'] });
+
+      // Remove header row if it exists and type the data
+      const clientsToImport = jsonData.slice(1).filter((row: any) => 
+        row.nome && typeof row.nome === 'string' && row.nome.trim() !== ''
+      ) as Array<{nome: string, telefone?: string, email?: string}>;
+
+      if (clientsToImport.length === 0) {
+        toast({
+          title: "Arquivo vazio",
+          description: "Nenhum cliente válido encontrado no arquivo.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      let importedCount = 0;
+      let errorCount = 0;
+
+      for (const clientData of clientsToImport) {
+        try {
+          await clientsService.create({
+            name: String(clientData.nome).trim(),
+            phone: clientData.telefone ? String(clientData.telefone).trim() : null,
+            email: clientData.email ? String(clientData.email).trim() : null,
+          });
+          importedCount++;
+        } catch (error) {
+          console.error('Erro ao importar cliente:', clientData, error);
+          errorCount++;
+        }
+      }
+
+      if (importedCount > 0) {
+        await loadClients(); // Recarregar lista
+        toast({
+          title: "Importação concluída com sucesso!",
+          description: `${importedCount} cliente(s) adicionado(s) ao sistema!${errorCount > 0 ? ` ${errorCount} erro(s) encontrado(s).` : ''}`,
+        });
+      } else {
+        toast({
+          title: "Erro na importação",
+          description: "Nenhum cliente pôde ser importado. Verifique o formato do arquivo.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao processar arquivo:', error);
+      toast({
+        title: "Erro ao processar arquivo",
+        description: "Verifique se o arquivo está no formato correto.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.ms-excel': ['.xls']
+    },
+    multiple: false,
+    disabled: loading
+  });
+
+  const handleWhatsApp = (phone: string) => {
+    const numeroLimpo = phone.replace(/\D/g, '');
+    window.open(`https://wa.me/55${numeroLimpo}`, '_blank');
   };
 
-  const handleGeneratePDF = async (client: ClientData) => {
+  const handleGeneratePDF = (client: Client) => {
+    // Convert Client to the format expected by generateClientPDF
+    const clientData = {
+      id: parseInt(client.id) || 1, // Convert string ID to number for PDF generator
+      nome: client.name,
+      email: client.email || '',
+      telefone: client.phone || '',
+      ultimaVisita: client.last_visit || '',
+      totalServicos: client.total_services,
+      status: client.is_active ? 'ativo' as const : 'inativo' as const,
+      servicos: client.total_services,
+      ultimoServico: client.last_visit || ''
+    };
+    generateClientPDF(clientData);
+  };
+
+  const toggleClientStatus = async (clientId: string) => {
     try {
-      // Adapt ClientData to match pdfGenerator interface
-      const pdfClient = {
-        ...client,
-        servicos: client.totalServicos,
-        ultimoServico: client.ultimaVisita
-      };
-      await generateClientPDF(pdfClient);
+      await clientsService.toggleActive(clientId);
+      await loadClients(); // Recarregar lista
       toast({
-        title: "PDF gerado com sucesso!",
-        description: `Relatório de ${client.nome} foi baixado.`,
+        title: "Status atualizado",
+        description: "Status do cliente foi alterado com sucesso.",
       });
     } catch (error) {
+      console.error('Erro ao alterar status:', error);
       toast({
-        title: "Erro ao gerar PDF",
-        description: "Não foi possível gerar o relatório.",
+        title: "Erro ao alterar status",
+        description: "Tente novamente em alguns instantes.",
         variant: "destructive",
       });
     }
   };
 
-  const toggleClientStatus = (clientId: number) => {
-    setClientes(clientes.map(client => {
-      if (client.id === clientId) {
-        const newStatus = client.status === 'ATIVO' ? 'INATIVO' : 'ATIVO';
-        toast({
-          title: "Status alterado!",
-          description: `${client.nome} agora está ${newStatus}.`,
-        });
-        return { ...client, status: newStatus };
-      }
-      return client;
-    }));
+  const handleViewClient = (client: Client) => {
+    setSelectedClient(client);
+    setShowViewModal(true);
   };
 
-  const handleDeleteClient = (client: ClientData) => {
+  const handleDeleteClient = (client: Client) => {
     setClientToDelete(client);
     setShowDeleteModal(true);
   };
 
-  const confirmDeleteClient = () => {
+  const confirmDeleteClient = async () => {
     if (clientToDelete) {
-      setClientes(clientes.filter(c => c.id !== clientToDelete.id));
-      toast({
-        title: "Cliente excluído!",
-        description: `${clientToDelete.nome} foi removido do sistema.`,
-      });
-      setClientToDelete(null);
-      setShowDeleteModal(false);
+      try {
+        await clientsService.delete(clientToDelete.id);
+        await loadClients(); // Recarregar lista
+        toast({
+          title: "Cliente excluído com sucesso!",
+          description: `${clientToDelete.name} foi removido do sistema.`,
+        });
+      } catch (error) {
+        console.error('Erro ao excluir cliente:', error);
+        toast({
+          title: "Erro ao excluir cliente",
+          description: "Tente novamente em alguns instantes.",
+          variant: "destructive",
+        });
+      } finally {
+        setShowDeleteModal(false);
+        setClientToDelete(null);
+      }
     }
+  };
+
+  const showHistoryModalForClient = (clientId: string) => {
+    setSelectedClientId(clientId);
+    setShowHistoryModal(true);
   };
 
   return (
@@ -149,218 +234,240 @@ const Clientes = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-primary">Clientes</h1>
-          <p className="text-muted-foreground">Gerencie a base de clientes</p>
+          <h1 className="text-3xl font-bold">Clientes</h1>
+          <p className="text-muted-foreground">Gerencie a base de clientes do seu negócio</p>
         </div>
         <div className="flex gap-2">
           <div {...getRootProps()}>
             <input {...getInputProps()} />
-            <Button variant="outline" className="flex items-center gap-2 cursor-pointer">
-              <Upload className="h-4 w-4" />
-              Importar Excel
+            <Button variant="outline" disabled={loading} className="cursor-pointer">
+              <Upload className="h-4 w-4 mr-2" />
+              {isDragActive ? "Solte o arquivo..." : "Importar Excel"}
             </Button>
           </div>
-          <Button onClick={() => setShowAddClientModal(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
+          <Button onClick={() => setShowAddModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
             Adicionar Cliente
           </Button>
         </div>
       </div>
 
-      {/* Search */}
+      {/* Search and Filter */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
-            Buscar Clientes
+            Buscar e Filtrar Clientes
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-4">
             <Input
-              placeholder="Buscar por nome, telefone ou email..."
+              placeholder="Buscar clientes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="max-w-sm"
             />
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="inativo">Inativo</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Estatísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold text-primary">{clientes.length}</div>
-                <p className="text-sm text-muted-foreground">Total de Clientes</p>
-              </div>
-              <Users className="h-8 w-8 text-primary" />
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Clientes</CardTitle>
+            <User className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{clients.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {clients.filter(c => c.is_active).length} ativos
+            </p>
           </CardContent>
         </Card>
+        
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold text-green-600">
-                  {clientes.reduce((acc, cliente) => acc + cliente.totalServicos, 0)}
-                </div>
-                <p className="text-sm text-muted-foreground">Serviços este Mês</p>
-              </div>
-              <Calendar className="h-8 w-8 text-green-600" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Serviços</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {clients.reduce((total, client) => total + client.total_services, 0)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Serviços realizados
+            </p>
           </CardContent>
         </Card>
+        
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-bold text-blue-600">
-                  {(clientes.reduce((acc, cliente) => acc + cliente.totalServicos, 0) / clientes.length).toFixed(1)}
-                </div>
-                <p className="text-sm text-muted-foreground">Média de Serviços</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-blue-600" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Média de Serviços</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {clients.length > 0 
+                ? (clients.reduce((total, client) => total + client.total_services, 0) / clients.length).toFixed(1)
+                : '0'
+              }
             </div>
+            <p className="text-xs text-muted-foreground">
+              Por cliente
+            </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Lista de Clientes */}
-      <div className="space-y-4">
-        {filteredClientes.map((cliente) => (
-          <Card key={cliente.id}>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-primary font-semibold text-lg">
-                        {cliente.nome.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                      </span>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{cliente.nome}</h3>
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                        <span>{cliente.telefone}</span>
-                        <span>{cliente.email}</span>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Carregando clientes...</span>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredClients.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <User className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum cliente encontrado</h3>
+                <p className="text-muted-foreground text-center">
+                  {searchTerm ? "Tente ajustar sua busca ou adicionar um novo cliente." : "Comece adicionando seu primeiro cliente."}
+                </p>
+                <Button 
+                  onClick={() => setShowAddModal(true)} 
+                  className="mt-4"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Cliente
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredClients.map((client) => (
+              <Card key={client.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={client.avatar_url || ""} />
+                        <AvatarFallback>
+                          {client.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{client.name}</h3>
+                          <Badge 
+                            variant={client.is_active ? 'default' : 'secondary'}
+                            onClick={() => toggleClientStatus(client.id)}
+                            className="cursor-pointer"
+                          >
+                            {client.is_active ? '✅ ATIVO' : '🚫 INATIVO'}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          <p>{client.email || 'Email não informado'}</p>
+                          <p>{client.phone || 'Telefone não informado'}</p>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Última visita: {client.last_visit ? new Date(client.last_visit).toLocaleDateString('pt-BR') : 'Nunca'} • 
+                          {client.total_services} serviços realizados
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant={cliente.status === 'ATIVO' ? 'default' : 'secondary'}
-                      className={cliente.status === 'ATIVO' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}
-                    >
-                      {cliente.status}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {cliente.totalServicos} serviços
-                    </Badge>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-muted-foreground">Status:</span>
-                      <Switch
-                        checked={cliente.status === 'ATIVO'}
-                        onCheckedChange={() => toggleClientStatus(cliente.id)}
-                        className="data-[state=checked]:bg-green-600"
-                      />
-                      <span className={`text-sm font-medium ${cliente.status === 'ATIVO' ? 'text-green-600' : 'text-gray-500'}`}>
-                        {cliente.status}
-                      </span>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Última visita: {new Date(cliente.ultimaVisita).toLocaleDateString('pt-BR')}
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <div className="flex space-x-2">
-                      <Button 
-                        onClick={() => handleWhatsApp(cliente.telefone)} 
-                        variant="outline" 
+                    
+                    <div className="flex items-center gap-2">
+                      {client.phone && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleWhatsApp(client.phone!)}
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      <Button
+                        variant="outline"
                         size="sm"
-                        className="text-green-600 hover:text-green-700"
+                        onClick={() => handleGeneratePDF(client)}
                       >
-                        <MessageCircle className="h-4 w-4 mr-1" />
-                        WhatsApp
+                        <FileText className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        onClick={() => handleGeneratePDF(cliente)} 
-                        variant="outline" 
+                      
+                      <Button
+                        variant="outline"
                         size="sm"
+                        onClick={() => handleViewClient(client)}
                       >
-                        <FileText className="h-4 w-4 mr-1" />
-                        PDF
+                        <Eye className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        onClick={() => {
-                          setSelectedClientId(cliente.id.toString());
-                          setShowClientHistoryModal(true);
-                        }}
-                        variant="outline" 
+                      
+                      <Button
+                        variant="outline"
                         size="sm"
-                        className="text-blue-600 hover:text-blue-700"
+                        onClick={() => showHistoryModalForClient(client.id)}
                       >
-                        <History className="h-4 w-4 mr-1" />
                         Histórico
                       </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteClient(client)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button 
-                      onClick={() => handleDeleteClient(cliente)} 
-                      variant="outline" 
-                      size="sm"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Excluir
-                    </Button>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredClientes.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Nenhum cliente encontrado</p>
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       )}
 
+      {/* Modais */}
       <AddClientModal 
-        open={showAddClientModal} 
-        onClose={() => setShowAddClientModal(false)} 
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onClientAdded={loadClients}
+      />
+      
+      <ViewClientModal
+        open={showViewModal}
+        onClose={() => setShowViewModal(false)}
+        client={selectedClient}
       />
       
       <DeleteClientModal
         open={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={confirmDeleteClient}
-        clientName={clientToDelete?.nome || ""}
+        clientName={clientToDelete?.name || ''}
       />
       
       <ClientHistoryModal
-        open={showClientHistoryModal}
-        onClose={() => {
-          setShowClientHistoryModal(false);
-          setSelectedClientId(null);
-        }}
+        open={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
         clientId={selectedClientId}
       />
     </div>
   );
-};
-
-export default Clientes;
+}

@@ -5,14 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { clientsService } from "@/services/clientsService";
+import { Loader2 } from "lucide-react";
 
 interface AddClientModalProps {
   open: boolean;
   onClose: () => void;
+  onClientAdded: () => void;
 }
 
-export function AddClientModal({ open, onClose }: AddClientModalProps) {
+export function AddClientModal({ open, onClose, onClientAdded }: AddClientModalProps) {
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     nome: "",
     telefone: "",
@@ -23,26 +27,58 @@ export function AddClientModal({ open, onClose }: AddClientModalProps) {
     observacoes: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Cliente adicionado:", formData);
     
-    toast({
-      title: "Cliente adicionado!",
-      description: `${formData.nome} foi cadastrado com sucesso.`,
-    });
+    if (!formData.nome.trim() || !formData.telefone.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome e telefone são obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
     
-    setFormData({
-      nome: "",
-      telefone: "",
-      email: "",
-      cpf: "",
-      profissao: "",
-      redesSociais: "",
-      observacoes: ""
-    });
-    
-    onClose();
+    try {
+      await clientsService.create({
+        name: formData.nome.trim(),
+        phone: formData.telefone.trim(),
+        email: formData.email.trim() || null,
+        cpf: formData.cpf.trim() || null,
+        profession: formData.profissao.trim() || null,
+        instagram: formData.redesSociais.trim() || null,
+        observations: formData.observacoes.trim() || null,
+      });
+
+      toast({
+        title: "Cliente adicionado com sucesso!",
+        description: `${formData.nome} foi cadastrado no sistema.`,
+      });
+      
+      setFormData({
+        nome: "",
+        telefone: "",
+        email: "",
+        cpf: "",
+        profissao: "",
+        redesSociais: "",
+        observacoes: ""
+      });
+      
+      onClientAdded();
+      onClose();
+    } catch (error) {
+      console.error('Erro ao criar cliente:', error);
+      toast({
+        title: "Erro ao adicionar cliente",
+        description: "Tente novamente em alguns instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -128,10 +164,11 @@ export function AddClientModal({ open, onClose }: AddClientModalProps) {
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit">
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Adicionar Cliente
             </Button>
           </div>
