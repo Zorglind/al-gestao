@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -26,11 +25,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 const Index = () => {
   const { user, profile, logout, isAuthenticated, loading } = useAuth();
 
-  const handleLogin = async (email: string, password: string) => {
-    // This function won't be used since LoginPage handles auth directly
-    return true;
-  };
-
   const handleLogout = () => {
     logout();
   };
@@ -47,7 +41,7 @@ const Index = () => {
   }
 
   if (!isAuthenticated || !user || !profile) {
-    return <LoginPage onLogin={handleLogin} />;
+    return <LoginPage />;
   }
 
   const isMobile = useIsMobile();
@@ -107,25 +101,25 @@ const Index = () => {
               </div>
             </header>
 
-          {/* Main Content */}
-          <main className="flex-1 p-6">
-            <Routes>
-              <Route path="/" element={<DashboardPage professionalName={profile.name} onLogout={handleLogout} />} />
-              <Route path="/profissionais" element={<Profissionais />} />
-              <Route path="/clientes" element={<Clientes />} />
-              <Route path="/agenda" element={<Agenda />} />
-              <Route path="/servicos" element={<Servicos />} />
-              <Route path="/produtos" element={<Produtos />} />
-              <Route path="/catalogo" element={<Catalogo />} />
-              <Route path="/anamnese" element={<Anamnese />} />
-              <Route path="/financeiro" element={<Financeiro />} />
-              <Route path="/exportacoes" element={<Exportacoes />} />
-              <Route path="/meu-perfil" element={<MeuPerfil />} />
-            </Routes>
-          </main>
+            {/* Main Content */}
+            <main className="flex-1 p-6">
+              <Routes>
+                <Route path="/" element={<DashboardPage professionalName={profile.name} onLogout={handleLogout} />} />
+                <Route path="/profissionais" element={<Profissionais />} />
+                <Route path="/clientes" element={<Clientes />} />
+                <Route path="/agenda" element={<Agenda />} />
+                <Route path="/servicos" element={<Servicos />} />
+                <Route path="/produtos" element={<Produtos />} />
+                <Route path="/catalogo" element={<Catalogo />} />
+                <Route path="/anamnese" element={<Anamnese />} />
+                <Route path="/financeiro" element={<Financeiro />} />
+                <Route path="/exportacoes" element={<Exportacoes />} />
+                <Route path="/meu-perfil" element={<MeuPerfil />} />
+              </Routes>
+            </main>
+          </div>
         </div>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
     </NotificationProvider>
   );
 };

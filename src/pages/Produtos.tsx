@@ -6,15 +6,34 @@ import { Input } from "@/components/ui/input";
 import { Package, Plus, Search, Tag, Package2, Trash2 } from "lucide-react";
 import { AddProductModal } from "@/components/modals/AddProductModal";
 import { EditProductModal } from "@/components/modals/EditProductModal";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+
+interface Produto {
+  id: number;
+  nome: string;
+  categoria: string;
+  estoque: number;
+  descricao: string;
+  foto: string;
+}
 
 const Produtos = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [showEditProductModal, setShowEditProductModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [produtos, setProdutos] = useState([
+  const [selectedProduct, setSelectedProduct] = useState<Produto | null>(null);
+  const [produtos, setProdutos] = useState<Produto[]>([
     {
       id: 1,
       nome: "Shampoo Hidratante Natural",
@@ -59,7 +78,7 @@ const Produtos = () => {
   const { toast } = useToast();
 
   const handleDeleteProduct = (productId: number) => {
-    setProdutos(produtos.filter(produto => produto.id !== productId));
+    setProdutos((produtosAtuais) => produtosAtuais.filter(produto => produto.id !== productId));
     toast({
       title: "Produto excluído",
       description: "O produto foi removido do catálogo.",
@@ -68,7 +87,7 @@ const Produtos = () => {
 
   const filteredProdutos = produtos.filter(produto =>
     produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    produto.categoria.toLowerCase().includes(searchTerm.toLowerCase())
+    produto.categoria?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getCategoriaColor = (categoria: string) => {
@@ -242,7 +261,10 @@ const Produtos = () => {
       
       <EditProductModal 
         open={showEditProductModal} 
-        onClose={() => setShowEditProductModal(false)}
+        onClose={() => {
+          setShowEditProductModal(false);
+          setSelectedProduct(null);
+        }}
         product={selectedProduct}
       />
     </div>

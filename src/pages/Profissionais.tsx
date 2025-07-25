@@ -1,9 +1,7 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Search, Mail, Key, Users } from "lucide-react";
 import { AddProfessionalModal } from "@/components/modals/AddProfessionalModal";
@@ -14,7 +12,7 @@ const Profissionais = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
-  const [selectedProfessional, setSelectedProfessional] = useState("");
+  const [selectedProfessional, setSelectedProfessional] = useState<string | null>(null);
   const { toast } = useToast();
 
   const [profissionais, setProfissionais] = useState([
@@ -42,8 +40,8 @@ const Profissionais = () => {
   ]);
 
   const filteredProfissionais = profissionais.filter(prof =>
-    prof.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    prof.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (prof.nome?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+     prof.email?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleOpenPermissions = (professionalName: string) => {
@@ -52,20 +50,19 @@ const Profissionais = () => {
   };
 
   const toggleProfessionalStatus = (id: number) => {
-    setProfissionais(prev => 
-      prev.map(prof => 
-        prof.id === id 
-          ? { ...prof, status: prof.status === "Ativo" ? "Inativo" : "Ativo" }
-          : prof
-      )
-    );
-
-    const professional = profissionais.find(p => p.id === id);
-    const newStatus = professional?.status === "Ativo" ? "Inativo" : "Ativo";
-    
-    toast({
-      title: "Status atualizado!",
-      description: `${professional?.nome} está agora ${newStatus}.`,
+    setProfissionais(prev => {
+      const updated = prev.map(prof => {
+        if (prof.id === id) {
+          const novoStatus = prof.status === "Ativo" ? "Inativo" : "Ativo";
+          toast({
+            title: "Status atualizado!",
+            description: `${prof.nome} está agora ${novoStatus}.`,
+          });
+          return { ...prof, status: novoStatus };
+        }
+        return prof;
+      });
+      return updated;
     });
   };
 
@@ -171,7 +168,10 @@ const Profissionais = () => {
       
       <PermissionsModal 
         open={isPermissionsModalOpen} 
-        onClose={() => setIsPermissionsModalOpen(false)}
+        onClose={() => {
+          setIsPermissionsModalOpen(false);
+          setSelectedProfessional(null);
+        }}
         professionalName={selectedProfessional}
       />
     </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, Building, Phone, Mail, MapPin, Palette, Clock, Upload, Save, Shield, Bell } from "lucide-react";
+import { User, Shield, Bell, Clock, Upload, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BRAND } from "@/constants/branding";
 import { useAuth } from "@/contexts/AuthContext";
-import * as React from "react";
 
 const MeuPerfil = () => {
   const { toast } = useToast();
@@ -21,14 +20,13 @@ const MeuPerfil = () => {
   const [notificacoes, setNotificacoes] = useState(true);
   const [profilePhoto, setProfilePhoto] = useState<string>("");
 
-  // Load profile photo from localStorage on mount
-  React.useEffect(() => {
+  useEffect(() => {
     const savedPhoto = localStorage.getItem('profilePhoto');
     if (savedPhoto) {
       setProfilePhoto(savedPhoto);
     }
   }, []);
-  
+
   const [perfil, setPerfil] = useState({
     nome: "Ana Silva",
     empresa: BRAND.name,
@@ -41,25 +39,41 @@ const MeuPerfil = () => {
     bio: "Profissional especializada em gestão e atendimento empresarial com foco em excelência operacional."
   });
 
-  const servicosOferecidos = [
+  const [servicosOferecidos, setServicosOferecidos] = useState([
     { id: "hidratacao", label: "Hidratação Intensiva", ativo: true },
     { id: "cronograma", label: "Cronograma Capilar", ativo: true },
     { id: "corte", label: "Corte Especializado", ativo: false },
     { id: "antiqueda", label: "Tratamento Antiqueda", ativo: true },
     { id: "nutricao", label: "Nutrição Capilar", ativo: true },
-  ];
+  ]);
 
-  const redesSociais = [
+  const [redesSociais, setRedesSociais] = useState([
     { rede: "Instagram", usuario: "@algestao_interna" },
     { rede: "WhatsApp", usuario: "(11) 99999-9999" },
     { rede: "Facebook", usuario: BRAND.name },
-  ];
+  ]);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof typeof perfil, value: string) => {
     setPerfil(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleServicoToggle = (id: string) => {
+    setServicosOferecidos(prev =>
+      prev.map(servico =>
+        servico.id === id ? { ...servico, ativo: !servico.ativo } : servico
+      )
+    );
+  };
+
+  const handleRedeSocialChange = (index: number, value: string) => {
+    setRedesSociais(prev => {
+      const newRedes = [...prev];
+      newRedes[index].usuario = value;
+      return newRedes;
+    });
   };
 
   const handleSave = () => {
@@ -236,7 +250,11 @@ const MeuPerfil = () => {
                     <Label htmlFor={servico.id} className="text-sm font-medium">
                       {servico.label}
                     </Label>
-                    <Switch id={servico.id} checked={servico.ativo} />
+                    <Switch
+                      id={servico.id}
+                      checked={servico.ativo}
+                      onCheckedChange={() => handleServicoToggle(servico.id)}
+                    />
                   </div>
                 ))}
               </div>
@@ -368,7 +386,7 @@ const MeuPerfil = () => {
                   <Label className="text-xs text-muted-foreground">{rede.rede}</Label>
                   <Input
                     value={rede.usuario}
-                    onChange={() => {}}
+                    onChange={(e) => handleRedeSocialChange(index, e.target.value)}
                     className="text-sm"
                   />
                 </div>

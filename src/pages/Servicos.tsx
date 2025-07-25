@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Scissors, Plus, Clock, DollarSign, Tag, Loader2 } from "lucide-react";
@@ -43,20 +43,21 @@ const Servicos = () => {
   }, [isAuthenticated]);
 
   const handleAddService = () => {
-    loadServices(); // Reload services after adding
+    loadServices(); // Recarrega serviços após adicionar
     setShowAddServiceModal(false);
   };
 
   const handleEditService = () => {
-    loadServices(); // Reload services after editing
+    loadServices(); // Recarrega serviços após editar
     setShowEditServiceModal(false);
     setSelectedService(null);
   };
 
-  const toggleService = async (id: string) => {
+  // Recebe o novo estado (checked: boolean) do switch para atualizar status
+  const toggleService = async (id: string, checked: boolean) => {
     try {
-      await servicesService.toggleActive(id);
-      await loadServices(); // Reload to get updated data
+      await servicesService.toggleActive(id, checked); // Supondo que toggleActive aceite o novo estado
+      await loadServices(); // Atualiza a lista
       toast({
         title: "Status atualizado",
         description: "O status do serviço foi alterado com sucesso."
@@ -133,7 +134,7 @@ const Servicos = () => {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-accent">R$ {valorMedio.toFixed(0)}</div>
+            <div className="text-2xl font-bold text-accent">R$ {valorMedio.toFixed(2)}</div>
             <p className="text-sm text-muted-foreground">Valor Médio</p>
           </CardContent>
         </Card>
@@ -203,7 +204,7 @@ const Servicos = () => {
                     <div className="flex items-center gap-2">
                       <Switch 
                         checked={service.is_active}
-                        onCheckedChange={() => toggleService(service.id)}
+                        onCheckedChange={(checked) => toggleService(service.id, checked)}
                       />
                       <span className="text-sm text-muted-foreground">
                         {service.is_active ? 'Ativo' : 'Inativo'}
@@ -235,15 +236,7 @@ const Servicos = () => {
           setShowEditServiceModal(false);
           setSelectedService(null);
         }}
-        service={selectedService ? {
-          id: parseInt(selectedService.id),
-          nome: selectedService.name,
-          categoria: selectedService.category,
-          duracao: selectedService.duration,
-          valor: Number(selectedService.price),
-          ativo: selectedService.is_active,
-          descricao: selectedService.description || ''
-        } : null}
+        service={selectedService}
       />
     </div>
   );

@@ -20,6 +20,8 @@ import { FormBuilder } from "@/components/anamnese/FormBuilder";
 import { FormFillModal } from "@/components/anamnese/FormFillModal";
 import { useToast } from "@/hooks/use-toast";
 
+import jsPDF from "jspdf";
+
 export default function Anamnese() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("templates");
@@ -109,7 +111,6 @@ export default function Anamnese() {
   };
 
   const handleEditTemplate = (template: AnamneseTemplate) => {
-    // Verificar se template tem respostas
     const hasResponses = responses.some(r => r.templateId === template.id);
     if (hasResponses) {
       toast({
@@ -148,11 +149,77 @@ export default function Anamnese() {
   };
 
   const handlePrintPDF = (response: AnamneseResponse) => {
+    const doc = new jsPDF();
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 15;
+    let y = 20;
+
+    // Título
+    doc.setFontSize(18);
+    doc.text("Ficha de Anamnese", pageWidth / 2, y, { align: "center" });
+
+    y += 10;
+
+    // Informações básicas
+    doc.setFontSize(12);
+    doc.text(`Cliente: ${response.clientName}`, margin, y);
+    y += 7;
+    doc.text(`Profissional: ${response.professionalName}`, margin, y);
+    y += 7;
+    doc.text(`Serviço: ${response.serviceName || "N/A"}`, margin, y);
+    y += 7;
+    doc.text(`Data: ${response.completedAt ? response.completedAt.toLocaleDateString() : "-"}`, margin, y);
+    y += 10;
+
+    doc.setFontSize(14);
+    doc.text(`Template: ${response.templateName}`, margin, y);
+    y += 10;
+
+    doc.setFontSize(12);
+
+    // Percorrer os campos da resposta (respostas)
+    if (response.responses) {
+      // Para pegar os labels, precisamos buscar o template
+      const template = templates.find(t => t.id === response.templateId);
+      if (template) {
+        template.fields
+          .sort((a, b) => a.order - b.order)
+          .forEach((field) => {
+            const answer = response.responses[field.id] || "-";
+            const label = field.label;
+            const maxLineWidth = pageWidth - margin * 2;
+
+            // Label
+            doc.setFont(undefined, "bold");
+            doc.text(`${label}:`, margin, y);
+            doc.setFont(undefined, "normal");
+
+            // Quebra de texto para respostas longas
+            const splitText = doc.splitTextToSize(answer, maxLineWidth - 20);
+            doc.text(splitText, margin + 10, y);
+            y += splitText.length * 7 + 5;
+
+            // Se estiver próximo do final da página, adiciona nova página
+            if (y > doc.internal.pageSize.getHeight() - 20) {
+              doc.addPage();
+              y = 20;
+            }
+          });
+      } else {
+        doc.text("Template não encontrado para este formulário.", margin, y);
+      }
+    } else {
+      doc.text("Nenhuma resposta registrada.", margin, y);
+    }
+
+    // Salvar PDF
+    doc.save(`Anamnese_${response.clientName.replace(/\s/g, "_")}.pdf`);
+
     toast({
-      title: "Gerando PDF...",
-      description: "O arquivo será baixado automaticamente."
+      title: "PDF gerado!",
+      description: "O arquivo foi baixado com sucesso."
     });
-    // Implementar geração de PDF real aqui
   };
 
   if (showFormBuilder) {
@@ -317,7 +384,7 @@ export default function Anamnese() {
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
-                        <span>{response.completedAt.toLocaleDateString('pt-BR')}</span>
+                        <span>{response.completedAt ? response.completedAt.toLocaleDateString('pt-BR') : "-"}</span>
                       </div>
                     </div>
                     <div className="flex gap-2">

@@ -56,6 +56,7 @@ function DraggableAgendamento({ agendamento, updateStatus }: { agendamento: Agen
 
   return (
     <div 
+      key={agendamento.id}
       ref={setNodeRef}
       style={style}
       {...attributes}
@@ -73,8 +74,8 @@ function DraggableAgendamento({ agendamento, updateStatus }: { agendamento: Agen
           value={agendamento.status}
           onValueChange={(newStatus) => updateStatus(agendamento.id, newStatus)}
         >
-          <SelectTrigger className="h-5 text-xs bg-white/20 border-white/30 text-white hover:bg-white/30">
-            <SelectValue />
+          <SelectTrigger className="h-6 text-xs bg-white/20 border-white/30 text-white hover:bg-white/30">
+            <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="agendado">Agendado</SelectItem>
@@ -105,7 +106,7 @@ const AgendaContent = () => {
   });
 
   // Dados mockados dos agendamentos
-  const [agendamentos, setAgendamentos] = useState([
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([
     { id: 1, cliente: "Maria Silva", servico: "Hidratação", profissional: "Ana Santos", horario: "09:00", status: "confirmado", data: currentDate.toISOString().split('T')[0] },
     { id: 2, cliente: "Beatriz Costa", servico: "Corte", profissional: "Carlos Lima", horario: "10:00", status: "confirmado", data: currentDate.toISOString().split('T')[0] },
     { id: 3, cliente: "Julia Oliveira", servico: "Cronograma", profissional: "Ana Santos", horario: "11:00", status: "realizado", data: currentDate.toISOString().split('T')[0] },
@@ -117,7 +118,7 @@ const AgendaContent = () => {
   const profissionais = ["Ana Santos", "Carlos Lima"];
   
   // Gerar horários de 30 em 30 minutos de 08:00 às 19:00
-  const horarios = [];
+  const horarios: string[] = [];
   for (let h = 8; h < 19; h++) {
     for (let m = 0; m < 60; m += 30) {
       const hora = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
@@ -138,7 +139,35 @@ const AgendaContent = () => {
   };
 
   const adicionarAgendamento = () => {
-    console.log("Novo agendamento:", novoAgendamento);
+    // Validação básica
+    if (!novoAgendamento.cliente.trim() || !novoAgendamento.profissional || !novoAgendamento.servico.trim() || !novoAgendamento.data || !novoAgendamento.horario) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos antes de agendar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const novoId = agendamentos.length > 0 ? Math.max(...agendamentos.map(a => a.id)) + 1 : 1;
+
+    const agendamentoParaAdicionar: Agendamento = {
+      id: novoId,
+      cliente: novoAgendamento.cliente.trim(),
+      profissional: novoAgendamento.profissional,
+      servico: novoAgendamento.servico.trim(),
+      data: novoAgendamento.data,
+      horario: novoAgendamento.horario,
+      status: novoAgendamento.status,
+    };
+
+    setAgendamentos(prev => [...prev, agendamentoParaAdicionar]);
+
+    toast({
+      title: "Agendamento criado!",
+      description: `${agendamentoParaAdicionar.cliente} foi agendado para ${agendamentoParaAdicionar.horario} com ${agendamentoParaAdicionar.profissional}.`,
+    });
+
     setNovoAgendamento({ cliente: "", profissional: "", servico: "", data: "", horario: "", status: "agendado" });
   };
 
@@ -183,7 +212,10 @@ const AgendaContent = () => {
     // Se foi solto em um slot de horário diferente
     if (typeof overId === 'string' && overId.includes('-')) {
       const [profissional, horario] = overId.split('-');
-      
+
+      // Buscar antes de atualizar para ter dados corretos no toast
+      const agendamento = agendamentos.find(a => a.id === activeId);
+
       setAgendamentos(prev => 
         prev.map(agendamento => 
           agendamento.id === activeId 
@@ -192,7 +224,6 @@ const AgendaContent = () => {
         )
       );
       
-      const agendamento = agendamentos.find(a => a.id === activeId);
       if (agendamento) {
         toast({
           title: "Agendamento movido!",
@@ -215,7 +246,7 @@ const AgendaContent = () => {
     if (agendamento) {
       toast({
         title: "Status atualizado!",
-        description: `${agendamento.cliente} está agora ${newStatus}.`,
+        description: `${agendamento.cliente} está agora ${getStatusText(newStatus)}.`,
       });
     }
   };
@@ -327,7 +358,7 @@ const AgendaContent = () => {
               <label className="text-sm font-medium">Visualização</label>
               <Select value={viewMode} onValueChange={setViewMode}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione visualização" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="diaria">Diária</SelectItem>
@@ -341,7 +372,7 @@ const AgendaContent = () => {
               <label className="text-sm font-medium">Profissional</label>
               <Select value={selectedProfessional} onValueChange={setSelectedProfessional}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione profissional" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Ana Santos">Ana Santos</SelectItem>
@@ -364,13 +395,13 @@ const AgendaContent = () => {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <div className="text-sm text-center flex-1">
+                <div className="text-sm text-center flex-1 capitalize">
                   {currentDate.toLocaleDateString('pt-BR', { 
                     weekday: 'long',
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric'
-                  }).replace(/(\w+),\s*(\d+)\/(\d+)\/(\d+)/, '$1, $2/$3/$4')}
+                  })}
                 </div>
                 <Button 
                   variant="outline" 
@@ -420,14 +451,14 @@ const AgendaContent = () => {
       {/* Agenda Visual Tipo Calendário */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 capitalize">
             <Calendar className="h-5 w-5" />
             Agenda Visual - {currentDate.toLocaleDateString('pt-BR', { 
               weekday: 'long',
               day: '2-digit', 
               month: '2-digit', 
               year: 'numeric' 
-            }).replace(/(\w+),\s*(\d+)\/(\d+)\/(\d+)/, '$1, $2/$3/$4')}
+            })}
           </CardTitle>
           <CardDescription>
             Visualização por horário e profissional

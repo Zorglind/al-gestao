@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ export default function Clientes() {
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const toggleStatusLoading = useRef(false); // Para bloquear cliques rápidos
 
   // Load clients from Supabase
   const loadClients = async () => {
@@ -53,7 +54,7 @@ export default function Clientes() {
   }, []);
 
   const filteredClients = clients.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = client.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (client.email && client.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (client.phone && client.phone.includes(searchTerm));
     
@@ -84,12 +85,13 @@ export default function Clientes() {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: ['nome', 'telefone', 'email'] });
+      // Use sheet_to_json sem header para que o XLSX trate o cabeçalho da planilha
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      // Remove header row if it exists and type the data
-      const clientsToImport = jsonData.slice(1).filter((row: any) => 
+      // Filtra linhas válidas: que possuem 'nome' e este é string não vazia
+      const clientsToImport = (jsonData as any[]).filter(row => 
         row.nome && typeof row.nome === 'string' && row.nome.trim() !== ''
-      ) as Array<{nome: string, telefone?: string, email?: string}>;
+      );
 
       if (clientsToImport.length === 0) {
         toast({
@@ -103,7 +105,8 @@ export default function Clientes() {
       let importedCount = 0;
       let errorCount = 0;
 
-      for (const clientData of clientsToImport) {
+      // Importa em paralelo (com Promise.all)
+      const importPromises = clientsToImport.map(async (clientData) => {
         try {
           await clientsService.create({
             name: String(clientData.nome).trim(),
@@ -115,7 +118,9 @@ export default function Clientes() {
           console.error('Erro ao importar cliente:', clientData, error);
           errorCount++;
         }
-      }
+      });
+
+      await Promise.all(importPromises);
 
       if (importedCount > 0) {
         await loadClients(); // Recarregar lista
@@ -158,9 +163,9 @@ export default function Clientes() {
   };
 
   const handleGeneratePDF = (client: Client) => {
-    // Convert Client to the format expected by generateClientPDF
+    // Mantém id como string para evitar problemas, ajuste o gerador para aceitar string
     const clientData = {
-      id: parseInt(client.id) || 1, // Convert string ID to number for PDF generator
+      id: client.id,
       nome: client.name,
       email: client.email || '',
       telefone: client.phone || '',
@@ -174,6 +179,9 @@ export default function Clientes() {
   };
 
   const toggleClientStatus = async (clientId: string) => {
+    if (toggleStatusLoading.current) return; // Bloqueia clique repetido
+    toggleStatusLoading.current = true;
+
     try {
       await clientsService.toggleActive(clientId);
       await loadClients(); // Recarregar lista
@@ -188,6 +196,8 @@ export default function Clientes() {
         description: "Tente novamente em alguns instantes.",
         variant: "destructive",
       });
+    } finally {
+      toggleStatusLoading.current = false;
     }
   };
 
@@ -366,7 +376,9 @@ export default function Clientes() {
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={client.avatar_url || ""} />
                         <AvatarFallback>
-                          {client.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          {client.name && client.name.length > 0
+                            ? client.name.split(' ').map(n => n[0]).join('').toUpperCase()
+                            : "CL"}
                         </AvatarFallback>
                       </Avatar>
                       
