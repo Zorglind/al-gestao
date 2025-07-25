@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -118,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error };
       }
 
+      // The auth state change listener will handle setting user/profile
       return {};
     } catch (error) {
       console.error('Login error:', error);
@@ -129,26 +130,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, name: string) => {
     try {
       setLoading(true);
-      const redirectUrl = `${window.location.origin}/`;
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl,
           data: {
             name: name
           }
         }
       });
 
+      setLoading(false);
+
       if (error) {
         console.error('Sign up error:', error);
-        setLoading(false);
         return { error };
       }
 
-      return {};
+      // Return success - the UI will handle showing appropriate message
+      return { data };
     } catch (error) {
       console.error('Sign up error:', error);
       setLoading(false);

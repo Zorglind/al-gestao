@@ -141,10 +141,10 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
     setIsLoading(true);
     
     try {
-      const { error } = await signUp(registerData.email, registerData.password, registerData.name);
+      const result = await signUp(registerData.email, registerData.password, registerData.name);
       
-      if (error) {
-        if (error.message?.includes('User already registered')) {
+      if (result.error) {
+        if (result.error.message?.includes('User already registered')) {
           toast({
             title: "Erro de cadastro",
             description: "Este email já está cadastrado. Tente fazer login.",
@@ -153,15 +153,16 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
         } else {
           toast({
             title: "Erro de cadastro",
-            description: error.message || "Erro ao criar conta. Tente novamente.",
+            description: result.error.message || "Erro ao criar conta. Tente novamente.",
             variant: "destructive"
           });
         }
       } else {
         toast({
           title: "Cadastro realizado com sucesso!",
-          description: "Verifique seu email para confirmar a conta."
+          description: "Faça login para continuar."
         });
+        
         setShowRegister(false);
         setRegisterData({
           name: "",
@@ -169,6 +170,9 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
           password: "",
           confirmPassword: ""
         });
+        
+        // Pre-fill email field for convenience
+        setEmail(registerData.email);
       }
     } catch (error) {
       toast({
