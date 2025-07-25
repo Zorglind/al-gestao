@@ -45,14 +45,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Permission mapping based on role
-const getPermissionsByRole = (role: 'admin' | 'professional'): string[] => {
-  if (role === 'admin') {
-    return ['dashboard', 'profissionais', 'clientes', 'agenda', 'anamnese', 'produtos', 'servicos', 'catalogo', 'financeiro', 'exportacoes', 'perfil'];
-  }
-  return ['dashboard', 'clientes', 'agenda', 'anamnese', 'catalogo', 'perfil'];
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -72,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
 
-      // Type conversion from database to our interface
       const profile: UserProfile = {
         id: data.id,
         user_id: data.user_id,
@@ -109,7 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
@@ -117,7 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer profile fetch to avoid deadlock
           setTimeout(async () => {
             const profileData = await fetchProfile(session.user.id);
             setProfile(profileData);
@@ -130,14 +119,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        // Defer profile fetch to avoid deadlock
         setTimeout(async () => {
           const profileData = await fetchProfile(session.user.id);
           setProfile(profileData);
@@ -165,7 +152,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error };
       }
 
-      // The auth state change listener will handle setting user/profile
       return {};
     } catch (error) {
       console.error('Login error:', error);
@@ -195,7 +181,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error };
       }
 
-      // Return success - the UI will handle showing appropriate message
       return { data };
     } catch (error) {
       console.error('Sign up error:', error);
@@ -211,7 +196,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error('Logout error:', error);
       }
-      // State will be cleared by the auth state change listener
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -219,14 +203,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Check if user has specific permission
   const hasPermission = (permission: string): boolean => {
     if (!profile || !profile.is_active) return false;
     
-    // Admins have all permissions
     if (profile.role === 'admin') return true;
     
-    // For professionals, check specific permissions from the database
     if (profile.role === 'professional' && profile.permissions) {
       return profile.permissions[permission as keyof typeof profile.permissions] || false;
     }
@@ -234,13 +215,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
-  // Check if user is admin
   const isAdmin = profile?.role === 'admin' && profile?.is_active;
-  
-  // Check if user is professional
   const isProfessional = profile?.role === 'professional' && profile?.is_active;
   
-  // Get user type display string
   const getUserTypeDisplay = (): string => {
     if (!profile) return '';
     
