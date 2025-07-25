@@ -7,8 +7,86 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, User } from "lucide-react";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useToast } from "@/hooks/use-toast";
+
+// Interface para agendamentos
+interface Agendamento {
+  id: number;
+  cliente: string;
+  servico: string;
+  profissional: string;
+  horario: string;
+  status: string;
+  data: string;
+}
+
+// Componente para agendamento arrastável
+function DraggableAgendamento({ agendamento, updateStatus }: { agendamento: Agendamento; updateStatus: (id: number, status: string) => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: agendamento.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const getStatusBackgroundColor = (status: string) => {
+    switch (status) {
+      case "confirmado": return "bg-green-500";
+      case "realizado": return "bg-blue-500";
+      case "agendado": return "bg-yellow-500";
+      case "faltou": return "bg-red-500";
+      case "cancelado": return "bg-gray-500";
+      default: return "bg-gray-100";
+    }
+  };
+
+  return (
+    <div 
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`h-16 p-2 border rounded transition-colors cursor-grab active:cursor-grabbing ${getStatusBackgroundColor(agendamento.status)} text-white border-transparent`}
+    >
+      <div className="text-xs">
+        <div className="font-semibold text-white truncate">
+          {agendamento.cliente}
+        </div>
+        <div className="text-white/90 truncate">
+          {agendamento.servico}
+        </div>
+        <Select
+          value={agendamento.status}
+          onValueChange={(newStatus) => updateStatus(agendamento.id, newStatus)}
+        >
+          <SelectTrigger className="h-6 text-xs bg-white/20 border-white/30 text-white">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="agendado">Agendado</SelectItem>
+            <SelectItem value="confirmado">Confirmado</SelectItem>
+            <SelectItem value="realizado">Realizado</SelectItem>
+            <SelectItem value="faltou">Faltou</SelectItem>
+            <SelectItem value="cancelado">Cancelado</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+}
 
 const Agenda = () => {
+  const { toast } = useToast();
   const [viewMode, setViewMode] = useState("diaria");
   const [selectedProfessional, setSelectedProfessional] = useState("todos");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -76,6 +154,44 @@ const Agenda = () => {
     }
   };
 
+  // Sensors para drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+    
+    const activeId = active.id as number;
+    const overId = over.id;
+    
+    // Se foi solto em um slot de horário diferente
+    if (typeof overId === 'string' && overId.includes('-')) {
+      const [profissional, horario] = overId.split('-');
+      
+      setAgendamentos(prev => 
+        prev.map(agendamento => 
+          agendamento.id === activeId 
+            ? { ...agendamento, profissional, horario }
+            : agendamento
+        )
+      );
+      
+      const agendamento = agendamentos.find(a => a.id === activeId);
+      if (agendamento) {
+        toast({
+          title: "Agendamento movido!",
+          description: `${agendamento.cliente} foi reagendado para ${horario} com ${profissional}.`,
+        });
+      }
+    }
+  };
+
   const updateAgendamentoStatus = (agendamentoId: number, newStatus: string) => {
     setAgendamentos(prev => 
       prev.map(agendamento => 
@@ -84,10 +200,23 @@ const Agenda = () => {
           : agendamento
       )
     );
+    
+    const agendamento = agendamentos.find(a => a.id === agendamentoId);
+    if (agendamento) {
+      toast({
+        title: "Status atualizado!",
+        description: `${agendamento.cliente} está agora ${newStatus}.`,
+      });
+    }
   };
 
   return (
-    <div className="space-y-6">
+    <DndContext 
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -311,60 +440,39 @@ const Agenda = () => {
                   <User className="h-4 w-4 mr-2" />
                   {profissional}
                 </div>
-                {horarios.map((hora) => {
-                  const agendamento = agendamentos.find(
-                    a => a.horario === hora && a.profissional === profissional
-                  );
-                  
-                  return (
-                    <div 
-                      key={`${profissional}-${hora}`} 
-                      className={`h-16 p-2 border rounded transition-colors cursor-pointer hover:opacity-80 ${
-                        agendamento 
-                          ? `${getStatusBackgroundColor(agendamento.status)} text-white border-transparent`
-                          : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-                      }`}
-                    >
-                      {agendamento ? (
-                        <div className="text-xs">
-                          <div className="font-semibold text-white truncate">
-                            {agendamento.cliente}
+                <SortableContext items={agendamentos.filter(a => a.profissional === profissional).map(a => a.id)} strategy={verticalListSortingStrategy}>
+                  {horarios.map((hora) => {
+                    const agendamento = agendamentos.find(
+                      a => a.horario === hora && a.profissional === profissional
+                    );
+                    
+                    return (
+                      <div 
+                        key={`${profissional}-${hora}`}
+                        id={`${profissional}-${hora}`}
+                        className={`h-16 ${!agendamento ? 'p-2 border rounded hover:bg-gray-100 border-gray-200' : ''}`}
+                      >
+                        {agendamento ? (
+                          <DraggableAgendamento 
+                            agendamento={agendamento} 
+                            updateStatus={updateAgendamentoStatus}
+                          />
+                        ) : (
+                          <div className="h-full flex items-center justify-center text-center text-gray-400 text-xs">
+                            Disponível
                           </div>
-                          <div className="text-white/90 truncate">
-                            {agendamento.servico}
-                          </div>
-                          <Select
-                            value={agendamento.status}
-                            onValueChange={(newStatus) => {
-                              updateAgendamentoStatus(agendamento.id, newStatus);
-                            }}
-                          >
-                            <SelectTrigger className="h-6 text-xs bg-white/20 border-white/30 text-white">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="agendado">Agendado</SelectItem>
-                              <SelectItem value="confirmado">Confirmado</SelectItem>
-                              <SelectItem value="realizado">Realizado</SelectItem>
-                              <SelectItem value="faltou">Faltou</SelectItem>
-                              <SelectItem value="cancelado">Cancelado</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ) : (
-                        <div className="text-center text-gray-400 text-xs">
-                          Disponível
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                        )}
+                      </div>
+                    );
+                  })}
+                </SortableContext>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </DndContext>
   );
 };
 

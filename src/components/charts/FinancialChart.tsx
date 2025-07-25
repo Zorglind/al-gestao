@@ -167,18 +167,18 @@ export function FinancialChart({ entradas, saidas }: FinancialChartProps) {
               <Line 
                 type="monotone" 
                 dataKey="entradas" 
-                stroke="hsl(var(--chart-2))" 
+                stroke="hsl(var(--chart-1))" 
                 strokeWidth={3}
                 name="Entradas"
-                dot={{ fill: "hsl(var(--chart-2))", strokeWidth: 2, r: 4 }}
+                dot={{ fill: "hsl(var(--chart-1))", strokeWidth: 2, r: 4 }}
               />
               <Line 
                 type="monotone" 
                 dataKey="saidas" 
-                stroke="hsl(var(--destructive))" 
+                stroke="hsl(var(--chart-2))" 
                 strokeWidth={3}
                 name="Saídas"
-                dot={{ fill: "hsl(var(--destructive))", strokeWidth: 2, r: 4 }}
+                dot={{ fill: "hsl(var(--chart-2))", strokeWidth: 2, r: 4 }}
               />
             </LineChart>
           </ResponsiveContainer>

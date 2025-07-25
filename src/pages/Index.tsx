@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { useAuth } from "@/contexts/AuthContext";
 import LoginPage from "@/components/LoginPage";
 import DashboardPage from "@/pages/DashboardPage";
 import Profissionais from "@/pages/Profissionais";
@@ -19,20 +20,18 @@ import { LogOut, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Sistema de login ativado
-  const [professionalName, setProfessionalName] = useState("Ana Silva");
+  const { user, logout, isAuthenticated } = useAuth();
 
-  const handleLogin = (professional: string) => {
-    setProfessionalName(professional);
-    setIsLoggedIn(true);
+  const handleLogin = async (email: string, password: string) => {
+    // This function won't be used since LoginPage handles auth directly
+    return true;
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    setProfessionalName("");
+    logout();
   };
 
-  if (!isLoggedIn) {
+  if (!isAuthenticated || !user) {
     return <LoginPage onLogin={handleLogin} />;
   }
 
@@ -60,11 +59,11 @@ const Index = () => {
                 </div>
               </div>
               
-              <div className="flex items-center space-x-4">
+               <div className="flex items-center space-x-4">
                 <div className="text-right">
-                  <p className="text-sm font-medium text-primary">Olá, {professionalName}!</p>
+                  <p className="text-sm font-medium text-primary">Olá, {user.name}!</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date().toLocaleDateString('pt-BR', { 
+                    {user.role === 'admin' ? 'Administrador' : 'Profissional'} • {new Date().toLocaleDateString('pt-BR', { 
                       weekday: 'long', 
                       year: 'numeric', 
                       month: 'long', 
@@ -87,7 +86,7 @@ const Index = () => {
           {/* Main Content */}
           <main className="flex-1 p-6">
             <Routes>
-              <Route path="/" element={<DashboardPage professionalName={professionalName} onLogout={handleLogout} />} />
+              <Route path="/" element={<DashboardPage professionalName={user.name} onLogout={handleLogout} />} />
               <Route path="/profissionais" element={<Profissionais />} />
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/agenda" element={<Agenda />} />

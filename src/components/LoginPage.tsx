@@ -6,13 +6,15 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Lock, User, Eye, EyeOff, AtSign, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import logoImage from "@/assets/sol-lima-logo.jpg";
 
 interface LoginPageProps {
-  onLogin: (professional: string) => void;
+  onLogin: (email: string, password: string) => Promise<boolean>;
 }
 
 const LoginPage = ({ onLogin }: LoginPageProps) => {
+  const { login } = useAuth();
   const [emailOrCpf, setEmailOrCpf] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -63,24 +65,14 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
     
     setIsLoading(true);
     
-    // Simulate login validation
-    setTimeout(() => {
-      // Usuários de teste disponíveis
-      const testUsers = [
-        { email: "admin@sollima.com", cpf: "12345678901", name: "Ana Silva" },
-        { email: "profissional@sollima.com", cpf: "98765432109", name: "Carlos Santos" },
-        { email: "teste@sollima.com", cpf: "11122233344", name: "Maria Oliveira" }
-      ];
+    try {
+      // Use the AuthContext login function
+      const success = await login(emailOrCpf, password);
       
-      const foundUser = testUsers.find(user => 
-        (emailOrCpf === user.email || emailOrCpf === user.cpf) && password === "123456"
-      );
-      
-      if (foundUser) {
-        onLogin(foundUser.name);
+      if (success) {
         toast({
           title: "Login realizado",
-          description: `Bem-vindo ao sistema Sol Lima, ${foundUser.name}!`
+          description: `Bem-vindo ao sistema Sol Lima!`
         });
       } else {
         toast({
@@ -89,8 +81,15 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
           variant: "destructive"
         });
       }
+    } catch (error) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Ocorreu um erro durante o login. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleRegister = (e: React.FormEvent) => {

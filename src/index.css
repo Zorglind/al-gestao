@@ -67,6 +67,13 @@ Cores da marca: Verde escuro #223321, Rosa claro #FADCE5, Dourado #C6A04B/#D4AF3
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
+    /* Chart colors for financial visualization */
+    --chart-1: 143 79% 12%;               /* Primary green for entradas */
+    --chart-2: 0 84.2% 60.2%;             /* Red for saídas */
+    --chart-3: 43 53% 53%;                /* Gold for highlights */
+    --chart-4: 330 67% 70%;               /* Light pink for secondary data */
+    --chart-5: 143 50% 25%;               /* Muted green for additional data */
+
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;

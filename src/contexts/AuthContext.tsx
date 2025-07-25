@@ -31,9 +31,17 @@ const mockUsers: User[] = [
   {
     id: '2',
     name: 'Ana Santos',
-    email: 'ana@sollima.com',
+    email: 'profissional@sollima.com',
     role: 'professional',
     permissions: ['dashboard', 'clientes', 'agenda', 'anamnese', 'catalogo'],
+    isActive: true
+  },
+  {
+    id: '3',
+    name: 'Maria Oliveira',
+    email: 'teste@sollima.com',
+    role: 'professional',
+    permissions: ['dashboard', 'clientes', 'agenda'],
     isActive: true
   }
 ];
@@ -44,21 +52,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Verifica se há um usuário logado no localStorage
     const savedUser = localStorage.getItem('user');
+    console.log('AuthContext: Checking saved user:', savedUser);
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      const userData = JSON.parse(savedUser);
+      console.log('AuthContext: Setting user from localStorage:', userData);
+      setUser(userData);
     }
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Busca o usuário nos dados mockados
-    const foundUser = mockUsers.find(u => u.email === email && u.isActive);
+  const login = async (emailOrCpf: string, password: string): Promise<boolean> => {
+    console.log('AuthContext: Login attempt for:', emailOrCpf);
+    // Find user by email or test with predefined passwords
+    const foundUser = mockUsers.find(u => 
+      u.email === emailOrCpf && u.isActive
+    );
     
-    if (foundUser && password.length >= 6) {
+    console.log('AuthContext: Found user:', foundUser);
+    
+    if (foundUser && password === "123456") {
+      console.log('AuthContext: Login successful, setting user');
       setUser(foundUser);
       localStorage.setItem('user', JSON.stringify(foundUser));
       return true;
     }
     
+    console.log('AuthContext: Login failed');
     return false;
   };
 
@@ -68,7 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const hasPermission = (permission: string): boolean => {
-    return user?.permissions.includes(permission) || false;
+    const hasAccess = user?.permissions.includes(permission) || false;
+    console.log(`AuthContext: Permission check for ${permission}:`, hasAccess, 'User:', user?.name);
+    return hasAccess;
   };
 
   return (
