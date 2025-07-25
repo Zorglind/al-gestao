@@ -188,7 +188,7 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
           <img 
             src={logoImage} 
             alt={BRAND.name} 
-            className="w-32 h-16 mx-auto mb-4 object-contain rounded-lg shadow-lg"
+            className="w-40 h-40 mx-auto mb-4 object-contain"
           />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-sol-lima-gold bg-clip-text text-transparent">
             {BRAND.name}

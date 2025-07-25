@@ -137,7 +137,7 @@ export function AppSidebar() {
             <img 
               src={logoImage} 
               alt={BRAND.name} 
-              className="w-10 h-5 object-contain"
+              className="w-8 h-8 object-contain"
             />
             {!collapsed && (
               <div>

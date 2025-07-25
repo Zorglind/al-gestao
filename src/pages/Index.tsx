@@ -58,7 +58,7 @@ const Index = () => {
                       <img 
                         src={logoImage} 
                         alt={BRAND.name} 
-                        className="w-10 h-5 object-contain"
+                        className="w-8 h-8 object-contain"
                       />
                       <div>
                         <h1 className="text-lg font-bold text-primary">{BRAND.shortName}</h1>
