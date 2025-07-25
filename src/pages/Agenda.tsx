@@ -22,14 +22,14 @@ const Agenda = () => {
   });
 
   // Dados mockados dos agendamentos
-  const agendamentos = [
+  const [agendamentos, setAgendamentos] = useState([
     { id: 1, cliente: "Maria Silva", servico: "Hidratação", profissional: "Ana Santos", horario: "09:00", status: "confirmado", data: currentDate.toISOString().split('T')[0] },
     { id: 2, cliente: "Beatriz Costa", servico: "Corte", profissional: "Carlos Lima", horario: "10:00", status: "confirmado", data: currentDate.toISOString().split('T')[0] },
-    { id: 3, cliente: "Julia Oliveira", servico: "Cronograma", profissional: "Ana Santos", horario: "11:00", status: "em-andamento", data: currentDate.toISOString().split('T')[0] },
+    { id: 3, cliente: "Julia Oliveira", servico: "Cronograma", profissional: "Ana Santos", horario: "11:00", status: "realizado", data: currentDate.toISOString().split('T')[0] },
     { id: 4, cliente: "Fernanda Rocha", servico: "Tratamento", profissional: "Carlos Lima", horario: "14:00", status: "agendado", data: currentDate.toISOString().split('T')[0] },
-    { id: 5, cliente: "Patricia Nunes", servico: "Hidratação", profissional: "Ana Santos", horario: "15:00", status: "agendado", data: currentDate.toISOString().split('T')[0] },
+    { id: 5, cliente: "Patricia Nunes", servico: "Hidratação", profissional: "Ana Santos", horario: "15:00", status: "faltou", data: currentDate.toISOString().split('T')[0] },
     { id: 6, cliente: "Camila Torres", servico: "Corte", profissional: "Carlos Lima", horario: "16:00", status: "cancelado", data: currentDate.toISOString().split('T')[0] }
-  ];
+  ]);
 
   const profissionais = ["Ana Santos", "Carlos Lima"];
   const horarios = Array.from({ length: 13 }, (_, i) => {
@@ -44,8 +44,9 @@ const Agenda = () => {
   const stats = {
     total: agendamentos.length,
     confirmados: agendamentos.filter(a => a.status === "confirmado").length,
-    emAndamento: agendamentos.filter(a => a.status === "em-andamento").length,
-    cancelados: agendamentos.filter(a => a.status === "cancelado").length
+    realizados: agendamentos.filter(a => a.status === "realizado").length,
+    cancelados: agendamentos.filter(a => a.status === "cancelado").length,
+    faltaram: agendamentos.filter(a => a.status === "faltou").length
   };
 
   const adicionarAgendamento = () => {
@@ -53,24 +54,36 @@ const Agenda = () => {
     setNovoAgendamento({ cliente: "", profissional: "", servico: "", data: "", horario: "", status: "agendado" });
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBackgroundColor = (status: string) => {
     switch (status) {
-      case "confirmado": return "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100";
-      case "em-andamento": return "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100";
-      case "agendado": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100";
-      case "cancelado": return "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100";
+      case "confirmado": return "bg-green-500";
+      case "realizado": return "bg-blue-500";
+      case "agendado": return "bg-yellow-500";
+      case "faltou": return "bg-red-500";
+      case "cancelado": return "bg-gray-500";
+      default: return "bg-gray-100";
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
       case "confirmado": return "Confirmado";
-      case "em-andamento": return "Em Andamento";
+      case "realizado": return "Realizado";
       case "agendado": return "Agendado";
+      case "faltou": return "Faltou";
       case "cancelado": return "Cancelado";
       default: return status;
     }
+  };
+
+  const updateAgendamentoStatus = (agendamentoId: number, newStatus: string) => {
+    setAgendamentos(prev => 
+      prev.map(agendamento => 
+        agendamento.id === agendamentoId 
+          ? { ...agendamento, status: newStatus }
+          : agendamento
+      )
+    );
   };
 
   return (
@@ -254,14 +267,14 @@ const Agenda = () => {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">{stats.emAndamento}</div>
-            <p className="text-sm text-muted-foreground">Em Andamento</p>
+            <div className="text-2xl font-bold text-blue-600">{stats.realizados}</div>
+            <p className="text-sm text-muted-foreground">Realizados</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-red-600">{stats.cancelados}</div>
-            <p className="text-sm text-muted-foreground">Cancelados</p>
+            <div className="text-2xl font-bold text-red-600">{stats.faltaram}</div>
+            <p className="text-sm text-muted-foreground">Faltaram</p>
           </CardContent>
         </Card>
       </div>
@@ -306,41 +319,34 @@ const Agenda = () => {
                   return (
                     <div 
                       key={`${profissional}-${hora}`} 
-                      className={`h-16 p-2 border rounded transition-colors cursor-pointer hover:bg-muted/50 ${
+                      className={`h-16 p-2 border rounded transition-colors cursor-pointer hover:opacity-80 ${
                         agendamento 
-                          ? agendamento.status === 'confirmado' 
-                            ? 'bg-green-100 border-green-300 hover:bg-green-200' 
-                            : agendamento.status === 'em-andamento'
-                            ? 'bg-blue-100 border-blue-300 hover:bg-blue-200'
-                            : agendamento.status === 'cancelado'
-                            ? 'bg-red-100 border-red-300 hover:bg-red-200'
-                            : 'bg-yellow-100 border-yellow-300 hover:bg-yellow-200'
-                          : 'bg-gray-50 hover:bg-gray-100'
+                          ? `${getStatusBackgroundColor(agendamento.status)} text-white border-transparent`
+                          : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
                       }`}
                     >
                       {agendamento ? (
                         <div className="text-xs">
-                          <div className="font-semibold text-gray-800 truncate">
+                          <div className="font-semibold text-white truncate">
                             {agendamento.cliente}
                           </div>
-                          <div className="text-gray-600 truncate">
+                          <div className="text-white/90 truncate">
                             {agendamento.servico}
                           </div>
                           <Select
                             value={agendamento.status}
                             onValueChange={(newStatus) => {
-                              // Aqui seria a lógica para atualizar o status
-                              console.log(`Alterando status de ${agendamento.cliente} para ${newStatus}`);
+                              updateAgendamentoStatus(agendamento.id, newStatus);
                             }}
                           >
-                            <SelectTrigger className="h-6 text-xs">
+                            <SelectTrigger className="h-6 text-xs bg-white/20 border-white/30 text-white">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="agendado">Agendado</SelectItem>
                               <SelectItem value="confirmado">Confirmado</SelectItem>
-                              <SelectItem value="em-andamento">Em Atendimento</SelectItem>
-                              <SelectItem value="finalizado">Finalizado</SelectItem>
+                              <SelectItem value="realizado">Realizado</SelectItem>
+                              <SelectItem value="faltou">Faltou</SelectItem>
                               <SelectItem value="cancelado">Cancelado</SelectItem>
                             </SelectContent>
                           </Select>

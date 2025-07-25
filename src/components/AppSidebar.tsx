@@ -1,17 +1,18 @@
 
 import { NavLink, useLocation } from "react-router-dom";
-import { 
-  Users, 
-  UserCheck, 
-  Calendar, 
-  Scissors, 
-  Package, 
-  FileText, 
-  Download, 
-  BarChart3,
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  FileText,
+  Package,
+  Briefcase,
   DollarSign,
+  Download,
   User,
-  Layers
+  UserPlus,
+  BookOpen
 } from "lucide-react";
 import {
   Sidebar,
@@ -27,17 +28,72 @@ import {
 import logoImage from "@/assets/sol-lima-logo.jpg";
 
 const menuItems = [
-  { title: "Painel", url: "/", icon: BarChart3 },
-  { title: "Profissionais", url: "/profissionais", icon: UserCheck },
-  { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Agenda", url: "/agenda", icon: Calendar },
-  { title: "Serviços", url: "/servicos", icon: Scissors },
-  { title: "Produtos", url: "/produtos", icon: Package },
-  { title: "Catálogo", url: "/catalogo", icon: Layers },
-  { title: "Anamnese", url: "/anamnese", icon: FileText },
-  { title: "Financeiro", url: "/financeiro", icon: DollarSign },
-  { title: "Exportações", url: "/exportacoes", icon: Download },
-  { title: "Meu Perfil", url: "/meu-perfil", icon: User },
+  {
+    title: "Dashboard",
+    url: "/",
+    icon: LayoutDashboard,
+    permission: "dashboard",
+  },
+  {
+    title: "Profissionais",
+    url: "/profissionais",
+    icon: UserPlus,
+    permission: "profissionais",
+  },
+  {
+    title: "Clientes", 
+    url: "/clientes",
+    icon: Users,
+    permission: "clientes",
+  },
+  {
+    title: "Agenda",
+    url: "/agenda", 
+    icon: Calendar,
+    permission: "agenda",
+  },
+  {
+    title: "Anamnese",
+    url: "/anamnese",
+    icon: FileText,
+    permission: "anamnese",
+  },
+  {
+    title: "Produtos",
+    url: "/produtos",
+    icon: Package,
+    permission: "produtos",
+  },
+  {
+    title: "Serviços",
+    url: "/servicos", 
+    icon: Briefcase,
+    permission: "servicos",
+  },
+  {
+    title: "Catálogo",
+    url: "/catalogo",
+    icon: BookOpen,
+    permission: "catalogo",
+  },
+  {
+    title: "Financeiro",
+    url: "/financeiro",
+    icon: DollarSign,
+    permission: "financeiro",
+  },
+  {
+    title: "Exportações", 
+    url: "/exportacoes",
+    icon: Download,
+    permission: "exportacoes",
+  },
+  {
+    title: "Meu Perfil",
+    url: "/meu-perfil",
+    icon: User,
+    permission: "perfil",
+  },
 ];
 
 export function AppSidebar() {
@@ -45,6 +101,8 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const currentPath = location.pathname;
+  const { hasPermission, user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   const isActive = (path: string) => {
     if (path === "/") return currentPath === "/";
@@ -83,20 +141,22 @@ export function AppSidebar() {
           <SidebarGroupLabel className="text-slate-300">Menu Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      end={item.url === "/"} 
-                      className={getNavCls}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {menuItems
+                .filter(item => hasPermission(item.permission))
+                .map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink 
+                        to={item.url} 
+                        end={item.url === "/"} 
+                        className={getNavCls}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

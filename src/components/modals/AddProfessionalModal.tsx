@@ -18,33 +18,62 @@ export function AddProfessionalModal({ open, onClose }: AddProfessionalModalProp
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
+    senha: "",
     cargo: "",
     telefone: "",
     whatsapp: "",
     horarioInicio: "",
     horarioFim: "",
-    ativo: true
+    ativo: true,
+    permissoes: ["dashboard", "clientes", "agenda", "anamnese"] // Permissões padrão
   });
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validações
+    if (!validateEmail(formData.email)) {
+      toast({
+        title: "E-mail inválido!",
+        description: "Por favor, insira um e-mail válido.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (formData.senha.length < 6) {
+      toast({
+        title: "Senha muito curta!",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     console.log("Dados do profissional:", formData);
     
     toast({
       title: "Profissional adicionado com sucesso!",
-      description: `${formData.nome} foi cadastrado no sistema.`,
+      description: `${formData.nome} foi cadastrado no sistema com acesso personalizado.`,
     });
     
     // Reset form
     setFormData({
       nome: "",
       email: "",
+      senha: "",
       cargo: "",
       telefone: "",
       whatsapp: "",
       horarioInicio: "",
       horarioFim: "",
-      ativo: true
+      ativo: true,
+      permissoes: ["dashboard", "clientes", "agenda", "anamnese"]
     });
     
     onClose();
@@ -76,9 +105,26 @@ export function AddProfessionalModal({ open, onClose }: AddProfessionalModalProp
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
+                placeholder="profissional@exemplo.com"
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="senha">Senha de Acesso</Label>
+            <Input
+              id="senha"
+              type="password"
+              value={formData.senha}
+              onChange={(e) => setFormData({...formData, senha: e.target.value})}
+              placeholder="Mínimo 6 caracteres"
+              minLength={6}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
           </div>
 
           <div className="space-y-2">
@@ -138,6 +184,48 @@ export function AddProfessionalModal({ open, onClose }: AddProfessionalModalProp
                 value={formData.horarioFim}
                 onChange={(e) => setFormData({...formData, horarioFim: e.target.value})}
               />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <Label>Permissões de Acesso</Label>
+            <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg">
+              {[
+                { key: "dashboard", label: "Painel" },
+                { key: "clientes", label: "Clientes" },
+                { key: "agenda", label: "Agenda" },
+                { key: "anamnese", label: "Anamnese" },
+                { key: "produtos", label: "Produtos" },
+                { key: "servicos", label: "Serviços" },
+                { key: "catalogo", label: "Catálogo" },
+                { key: "financeiro", label: "Financeiro" },
+                { key: "exportacoes", label: "Exportações" },
+              ].map((permissao) => (
+                <div key={permissao.key} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={permissao.key}
+                    checked={formData.permissoes.includes(permissao.key)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData({
+                          ...formData,
+                          permissoes: [...formData.permissoes, permissao.key]
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          permissoes: formData.permissoes.filter(p => p !== permissao.key)
+                        });
+                      }
+                    }}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor={permissao.key} className="text-sm">
+                    {permissao.label}
+                  </Label>
+                </div>
+              ))}
             </div>
           </div>
 

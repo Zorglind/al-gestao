@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { AddFinanceModal } from "@/components/modals/AddFinanceModal";
 import { EditFinanceModal, type FinanceEntry } from "@/components/modals/EditFinanceModal";
+import { FinancialChart } from "@/components/charts/FinancialChart";
 import { useToast } from "@/hooks/use-toast";
 
 const Financeiro = () => {
@@ -93,6 +94,12 @@ const Financeiro = () => {
           <p className="text-muted-foreground">Gerencie suas entradas e saídas mensais</p>
         </div>
       </div>
+
+      {/* Gráfico Financeiro */}
+      <FinancialChart 
+        entradas={entradas.map(e => ({ data: e.data, valor: e.valor }))}
+        saidas={saidas.map(s => ({ data: s.data, valor: s.valor }))}
+      />
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

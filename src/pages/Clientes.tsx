@@ -1,23 +1,40 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Search, Phone, Mail, Upload, MessageCircle, Download } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Search, Upload, UserPlus, MessageCircle, FileText, Users, Calendar, TrendingUp, Trash2 } from "lucide-react";
 import { AddClientModal } from "@/components/modals/AddClientModal";
+import { DeleteClientModal } from "@/components/modals/DeleteClientModal";
+import { useDropzone } from 'react-dropzone';
+import { generateClientPDF } from '@/utils/pdfGenerator';
 import { useToast } from "@/hooks/use-toast";
-import { useDropzone } from "react-dropzone";
-import { generateClientPDF, processExcelImport, type ClientData } from "@/utils/pdfGenerator";
+
+interface ClientData {
+  id: number;
+  nome: string;
+  email: string;
+  telefone: string;
+  ultimaVisita: string;
+  totalServicos: number;
+  status: 'ATIVO' | 'INATIVO';
+}
 
 const Clientes = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<ClientData | null>(null);
+
   const [clientes, setClientes] = useState<ClientData[]>([
-    { id: 1, nome: "Maria Silva", telefone: "(11) 99999-9999", email: "maria@email.com", servicos: 8, ultimoServico: "2024-01-15" },
-    { id: 2, nome: "Ana Santos", telefone: "(11) 88888-8888", email: "ana@email.com", servicos: 5, ultimoServico: "2024-01-10" },
-    { id: 3, nome: "Beatriz Costa", telefone: "(11) 77777-7777", email: "beatriz@email.com", servicos: 12, ultimoServico: "2024-01-20" },
+    { id: 1, nome: "Maria Silva", email: "maria@email.com", telefone: "(11) 99999-9999", ultimaVisita: "2024-01-15", totalServicos: 8, status: 'ATIVO' },
+    { id: 2, nome: "Ana Santos", email: "ana@email.com", telefone: "(11) 88888-8888", ultimaVisita: "2024-01-12", totalServicos: 12, status: 'ATIVO' },
+    { id: 3, nome: "Beatriz Costa", email: "beatriz@email.com", telefone: "(11) 77777-7777", ultimaVisita: "2024-01-10", totalServicos: 5, status: 'INATIVO' },
+    { id: 4, nome: "Julia Oliveira", email: "julia@email.com", telefone: "(11) 66666-6666", ultimaVisita: "2024-01-08", totalServicos: 15, status: 'ATIVO' },
+    { id: 5, nome: "Fernanda Rocha", email: "fernanda@email.com", telefone: "(11) 55555-5555", ultimaVisita: "2024-01-05", totalServicos: 3, status: 'ATIVO' },
   ]);
-  const { toast } = useToast();
 
   const filteredClientes = clientes.filter(cliente =>
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -25,29 +42,39 @@ const Clientes = () => {
     cliente.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const onDropExcel = useCallback(async (acceptedFiles: File[]) => {
+  // Função para processar importação de Excel (mock)
+  const processExcelImport = async (file: File): Promise<ClientData[]> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { id: Date.now(), nome: "Cliente Importado", email: "importado@exemplo.com", telefone: "(11) 00000-0000", ultimaVisita: new Date().toISOString().split('T')[0], totalServicos: 0, status: 'ATIVO' }
+        ]);
+      }, 1000);
+    });
+  };
+
+  const onDrop = async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
       try {
         const importedClients = await processExcelImport(file);
         setClientes(prev => [...prev, ...importedClients]);
-        
         toast({
           title: "Importação concluída!",
-          description: `${importedClients.length} clientes foram importados com sucesso.`,
+          description: `${importedClients.length} clientes foram importados.`,
         });
       } catch (error) {
         toast({
           title: "Erro na importação",
-          description: "Não foi possível processar o arquivo. Verifique o formato.",
+          description: "Não foi possível processar o arquivo.",
           variant: "destructive"
         });
       }
     }
-  }, [toast, setClientes]);
+  };
 
-  const { getRootProps: getExcelRootProps, getInputProps: getExcelInputProps } = useDropzone({
-    onDrop: onDropExcel,
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
     accept: {
       'text/csv': ['.csv'],
       'application/vnd.ms-excel': ['.xls'],
@@ -56,25 +83,61 @@ const Clientes = () => {
     maxFiles: 1
   });
 
-  const handleWhatsApp = (cliente: ClientData) => {
-    const message = `Olá ${cliente.nome}! Como posso ajudá-lo hoje?`;
-    const phoneNumber = cliente.telefone.replace(/\D/g, '');
-    window.open(`https://wa.me/55${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+  const handleWhatsApp = (telefone: string) => {
+    const phoneNumber = telefone.replace(/\D/g, '');
+    window.open(`https://wa.me/55${phoneNumber}`, '_blank');
   };
 
-  const handleGeneratePDF = async (cliente: ClientData) => {
+  const handleGeneratePDF = async (client: ClientData) => {
     try {
-      await generateClientPDF(cliente);
+      // Adapt ClientData to match pdfGenerator interface
+      const pdfClient = {
+        ...client,
+        servicos: client.totalServicos,
+        ultimoServico: client.ultimaVisita
+      };
+      await generateClientPDF(pdfClient);
       toast({
-        title: "PDF gerado!",
-        description: `PDF da ficha de ${cliente.nome} foi baixado.`,
+        title: "PDF gerado com sucesso!",
+        description: `Relatório de ${client.nome} foi baixado.`,
       });
     } catch (error) {
       toast({
         title: "Erro ao gerar PDF",
-        description: "Não foi possível gerar o PDF. Tente novamente.",
-        variant: "destructive"
+        description: "Não foi possível gerar o relatório.",
+        variant: "destructive",
       });
+    }
+  };
+
+  const toggleClientStatus = (clientId: number) => {
+    setClientes(clientes.map(client => {
+      if (client.id === clientId) {
+        const newStatus = client.status === 'ATIVO' ? 'INATIVO' : 'ATIVO';
+        toast({
+          title: "Status alterado!",
+          description: `${client.nome} agora está ${newStatus}.`,
+        });
+        return { ...client, status: newStatus };
+      }
+      return client;
+    }));
+  };
+
+  const handleDeleteClient = (client: ClientData) => {
+    setClientToDelete(client);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteClient = () => {
+    if (clientToDelete) {
+      setClientes(clientes.filter(c => c.id !== clientToDelete.id));
+      toast({
+        title: "Cliente excluído!",
+        description: `${clientToDelete.nome} foi removido do sistema.`,
+      });
+      setClientToDelete(null);
+      setShowDeleteModal(false);
     }
   };
 
@@ -84,19 +147,19 @@ const Clientes = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-primary">Clientes</h1>
-          <p className="text-muted-foreground">Gerencie a base de clientes Sol Lima</p>
+          <p className="text-muted-foreground">Gerencie a base de clientes</p>
         </div>
         <div className="flex gap-2">
-          <div {...getExcelRootProps()}>
-            <input {...getExcelInputProps()} />
+          <div {...getRootProps()}>
+            <input {...getInputProps()} />
             <Button variant="outline" className="flex items-center gap-2 cursor-pointer">
               <Upload className="h-4 w-4" />
               Importar Excel
             </Button>
           </div>
-          <Button variant="default" className="flex items-center gap-2" onClick={() => setShowAddClientModal(true)}>
-            <UserPlus className="h-4 w-4" />
-            Novo Cliente
+          <Button onClick={() => setShowAddClientModal(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Adicionar Cliente
           </Button>
         </div>
       </div>
@@ -126,73 +189,125 @@ const Clientes = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-primary">{clientes.length}</div>
-            <p className="text-sm text-muted-foreground">Total de Clientes</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-primary">{clientes.length}</div>
+                <p className="text-sm text-muted-foreground">Total de Clientes</p>
+              </div>
+              <Users className="h-8 w-8 text-primary" />
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-accent">25</div>
-            <p className="text-sm text-muted-foreground">Serviços este Mês</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-green-600">
+                  {clientes.reduce((acc, cliente) => acc + cliente.totalServicos, 0)}
+                </div>
+                <p className="text-sm text-muted-foreground">Serviços este Mês</p>
+              </div>
+              <Calendar className="h-8 w-8 text-green-600" />
+            </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-secondary">8.5</div>
-            <p className="text-sm text-muted-foreground">Média de Serviços</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {(clientes.reduce((acc, cliente) => acc + cliente.totalServicos, 0) / clientes.length).toFixed(1)}
+                </div>
+                <p className="text-sm text-muted-foreground">Média de Serviços</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-blue-600" />
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Lista de Clientes */}
-      <div className="grid gap-4">
+      <div className="space-y-4">
         {filteredClientes.map((cliente) => (
-          <Card key={cliente.id} className="hover:shadow-md transition-shadow">
+          <Card key={cliente.id}>
             <CardContent className="p-6">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2 flex-1">
-                  <div className="flex items-center gap-3">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-primary font-semibold">
+                      <span className="text-primary font-semibold text-lg">
                         {cliente.nome.split(' ').map(n => n[0]).join('').substring(0, 2)}
                       </span>
                     </div>
                     <div>
                       <h3 className="font-semibold text-lg">{cliente.nome}</h3>
-                      <p className="text-sm text-muted-foreground">Cliente</p>
+                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                        <span>{cliente.telefone}</span>
+                        <span>{cliente.email}</span>
+                      </div>
                     </div>
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                      {cliente.telefone}
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                      {cliente.email}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Badge variant="outline">
-                      {cliente.servicos} serviços
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant={cliente.status === 'ATIVO' ? 'default' : 'secondary'}
+                      className={cliente.status === 'ATIVO' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}
+                    >
+                      {cliente.status}
                     </Badge>
-                    <Badge variant="secondary">
-                      Último: {new Date(cliente.ultimoServico).toLocaleDateString('pt-BR')}
+                    <Badge variant="outline" className="text-xs">
+                      {cliente.totalServicos} serviços
                     </Badge>
                   </div>
                 </div>
-
-                <div className="flex flex-col gap-2">
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleWhatsApp(cliente)}>
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    WhatsApp
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleGeneratePDF(cliente)}>
-                    <Download className="h-4 w-4 mr-2" />
-                    PDF
-                  </Button>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-muted-foreground">Status:</span>
+                      <Switch
+                        checked={cliente.status === 'ATIVO'}
+                        onCheckedChange={() => toggleClientStatus(cliente.id)}
+                        className="data-[state=checked]:bg-green-600"
+                      />
+                      <span className={`text-sm font-medium ${cliente.status === 'ATIVO' ? 'text-green-600' : 'text-gray-500'}`}>
+                        {cliente.status}
+                      </span>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Última visita: {new Date(cliente.ultimaVisita).toLocaleDateString('pt-BR')}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <div className="flex space-x-2">
+                      <Button 
+                        onClick={() => handleWhatsApp(cliente.telefone)} 
+                        variant="outline" 
+                        size="sm"
+                        className="text-green-600 hover:text-green-700"
+                      >
+                        <MessageCircle className="h-4 w-4 mr-1" />
+                        WhatsApp
+                      </Button>
+                      <Button 
+                        onClick={() => handleGeneratePDF(cliente)} 
+                        variant="outline" 
+                        size="sm"
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        PDF
+                      </Button>
+                    </div>
+                    <Button 
+                      onClick={() => handleDeleteClient(cliente)} 
+                      variant="outline" 
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Excluir
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -203,7 +318,7 @@ const Clientes = () => {
       {filteredClientes.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
-            <UserPlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">Nenhum cliente encontrado</p>
           </CardContent>
         </Card>
@@ -212,6 +327,13 @@ const Clientes = () => {
       <AddClientModal 
         open={showAddClientModal} 
         onClose={() => setShowAddClientModal(false)} 
+      />
+      
+      <DeleteClientModal
+        open={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDeleteClient}
+        clientName={clientToDelete?.nome || ""}
       />
     </div>
   );
