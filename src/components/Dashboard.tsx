@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,13 +24,10 @@ import {
   User,
   Target,
   Edit3,
-  X,
-  Loader2
+  X
 } from "lucide-react";
 import { BRAND } from "@/constants/branding";
 import { useNotifications } from "@/contexts/NotificationContext";
-import { dashboardService, type DashboardStats, type TodayAppointment } from "@/services/dashboardService";
-import { useToast } from "@/hooks/use-toast";
 
 interface DashboardProps {
   professionalName: string;
@@ -39,19 +36,10 @@ interface DashboardProps {
 
 const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [busca, setBusca] = useState("");
   const { notifications, addNotification, removeNotification } = useNotifications();
   const [novoLembrete, setNovoLembrete] = useState("");
   const [currentTime] = useState(new Date());
-  const [isLoading, setIsLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats>({
-    appointmentsToday: 0,
-    clientsThisMonth: 0,
-    pendingConfirmations: 0,
-    monthlyRevenue: 0
-  });
-  const [todayAppointments, setTodayAppointments] = useState<TodayAppointment[]>([]);
   
   // Estados para modais
   const [novoCliente, setNovoCliente] = useState({
@@ -67,30 +55,20 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
     horario: ""
   });
 
-  const loadDashboardData = async () => {
-    try {
-      setIsLoading(true);
-      const [statsData, appointmentsData] = await Promise.all([
-        dashboardService.getStats(),
-        dashboardService.getTodayAppointments()
-      ]);
-      setStats(statsData);
-      setTodayAppointments(appointmentsData);
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      toast({
-        title: "Erro ao carregar dados",
-        description: "Não foi possível carregar os dados do dashboard.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Dados mockados para demonstração
+  const agendamentosHoje = [
+    { id: 1, cliente: "Maria Silva", horario: "09:00", servico: "Hidratação Intensiva", status: "confirmado" },
+    { id: 2, cliente: "Ana Santos", horario: "11:30", servico: "Corte + Finalização", status: "em-andamento" },
+    { id: 3, cliente: "Beatriz Costa", horario: "14:00", servico: "Cronograma Capilar", status: "agendado" },
+    { id: 4, cliente: "Julia Oliveira", horario: "16:30", servico: "Tratamento Antiqueda", status: "agendado" },
+  ];
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+  const stats = {
+    agendamentosHoje: 4,
+    clientesMes: 67,
+    confirmacoesaPendentes: 3,
+    faturamentoMensal: 8500
+  };
 
   const adicionarLembrete = () => {
     if (novoLembrete.trim()) {
@@ -306,11 +284,9 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">
-                {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.appointmentsToday}
-              </div>
+              <div className="text-2xl font-bold text-primary">{stats.agendamentosHoje}</div>
               <p className="text-xs text-muted-foreground">
-                Hoje
+                +2 desde ontem
               </p>
             </CardContent>
           </Card>
@@ -321,11 +297,9 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">
-                {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.clientsThisMonth}
-              </div>
+              <div className="text-2xl font-bold text-primary">{stats.clientesMes}</div>
               <p className="text-xs text-muted-foreground">
-                Este mês
+                +12% vs mês anterior
               </p>
             </CardContent>
           </Card>
@@ -336,9 +310,7 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-amber-600">
-                {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.pendingConfirmations}
-              </div>
+              <div className="text-2xl font-bold text-amber-600">{stats.confirmacoesaPendentes}</div>
               <p className="text-xs text-muted-foreground">
                 Requer atenção
               </p>
@@ -352,12 +324,10 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-accent">
-                {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : 
-                  `R$ ${stats.monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                }
+                R$ {stats.faturamentoMensal.toLocaleString('pt-BR')}
               </div>
               <p className="text-xs text-muted-foreground">
-                Este mês
+                +15% vs mês anterior
               </p>
             </CardContent>
           </Card>
@@ -377,35 +347,25 @@ const Dashboard = ({ professionalName, onLogout }: DashboardProps) => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {isLoading ? (
-                  <div className="flex items-center justify-center p-8">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : todayAppointments.length > 0 ? (
-                  todayAppointments.map((agendamento) => (
-                    <div 
-                      key={agendamento.id} 
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-primary">{agendamento.time}</div>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-foreground">{agendamento.client_name}</h4>
-                          <p className="text-sm text-muted-foreground">{agendamento.service_name}</p>
-                        </div>
+                {agendamentosHoje.map((agendamento) => (
+                  <div 
+                    key={agendamento.id} 
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="text-center">
+                        <div className="text-lg font-bold text-primary">{agendamento.horario}</div>
                       </div>
-                      <Badge className={getStatusColor(agendamento.status)}>
-                        {getStatusText(agendamento.status)}
-                      </Badge>
+                      <div>
+                        <h4 className="font-semibold text-foreground">{agendamento.cliente}</h4>
+                        <p className="text-sm text-muted-foreground">{agendamento.servico}</p>
+                      </div>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    Nenhum agendamento para hoje
-                  </p>
-                )}
+                    <Badge className={getStatusColor(agendamento.status)}>
+                      {getStatusText(agendamento.status)}
+                    </Badge>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

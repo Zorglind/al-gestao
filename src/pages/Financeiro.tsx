@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,23 +13,20 @@ import {
   DollarSign, 
   Calendar,
   Edit,
-  Trash2,
-  Loader2
+  Trash2
 } from "lucide-react";
 import { AddFinanceModal } from "@/components/modals/AddFinanceModal";
 import { EditFinanceModal, type FinanceEntry } from "@/components/modals/EditFinanceModal";
 import { FinancialChart } from "@/components/charts/FinancialChart";
 import { useToast } from "@/hooks/use-toast";
-import { financialService, type FinancialEntry, PAYMENT_METHOD_LABELS, CATEGORY_LABELS } from "@/services/financialService";
 
 const Financeiro = () => {
   const { toast } = useToast();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [showFinanceModal, setShowFinanceModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<FinancialEntry | null>(null);
+  const [editingEntry, setEditingEntry] = useState<FinanceEntry | null>(null);
   const [modalType, setModalType] = useState<"entrada" | "saida">("entrada");
-  const [isLoading, setIsLoading] = useState(true);
   const [novaEntrada, setNovaEntrada] = useState({
     cliente: "",
     servico: "",
@@ -37,115 +34,56 @@ const Financeiro = () => {
     formaPagamento: "",
     data: ""
   });
+
   const [novaSaida, setNovaSaida] = useState({
     tipo: "",
     descricao: "",
     valor: "",
     data: ""
   });
-  
-  const [financialEntries, setFinancialEntries] = useState<FinancialEntry[]>([]);
-  const [summary, setSummary] = useState({
-    totalIncome: 0,
-    totalExpenses: 0,
-    balance: 0,
-    incomeCount: 0,
-    expenseCount: 0
-  });
 
-  const loadFinancialData = async () => {
-    try {
-      setIsLoading(true);
-      const [entries, summaryData] = await Promise.all([
-        financialService.getAll(),
-        financialService.getSummary()
-      ]);
-      setFinancialEntries(entries);
-      setSummary(summaryData);
-    } catch (error) {
-      console.error('Error loading financial data:', error);
-      toast({
-        title: "Erro ao carregar dados",
-        description: "Não foi possível carregar os dados financeiros.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Dados mockados - convertendo para formato FinanceEntry
+  const [entradas, setEntradas] = useState<FinanceEntry[]>([
+    { id: 1, tipo: "entrada", cliente: "Maria Silva", servico: "Hidratação", valor: 150.00, formaPagamento: "Pix", data: "2024-01-15" },
+    { id: 2, tipo: "entrada", cliente: "Ana Santos", servico: "Corte + Finalização", valor: 200.00, formaPagamento: "Cartão", data: "2024-01-14" },
+    { id: 3, tipo: "entrada", cliente: "Beatriz Costa", servico: "Cronograma Capilar", valor: 250.00, formaPagamento: "Dinheiro", data: "2024-01-13" },
+  ]);
 
-  useEffect(() => {
-    loadFinancialData();
-  }, []);
+  const [saidas, setSaidas] = useState<FinanceEntry[]>([
+    { id: 1, tipo: "saida", categoria: "Produto", descricao: "Máscara Hidratante", valor: 45.00, data: "2024-01-15" },
+    { id: 2, tipo: "saida", categoria: "Aluguel", descricao: "Aluguel do Espaço", valor: 800.00, data: "2024-01-10" },
+    { id: 3, tipo: "saida", categoria: "Marketing", descricao: "Impulsionamento Instagram", valor: 100.00, data: "2024-01-08" },
+  ]);
 
-  const incomeEntries = financialEntries.filter(entry => entry.type === 'income');
-  const expenseEntries = financialEntries.filter(entry => entry.type === 'expense');
+  const totalEntradas = entradas.reduce((acc, entrada) => acc + entrada.valor, 0);
+  const totalSaidas = saidas.reduce((acc, saida) => acc + saida.valor, 0);
+  const saldoMensal = totalEntradas - totalSaidas;
 
-  const handleEditEntry = (entry: FinancialEntry) => {
+  const handleEditEntry = (entry: FinanceEntry) => {
     setEditingEntry(entry);
     setShowEditModal(true);
   };
 
-  const handleSaveEntry = async (updatedEntry: FinancialEntry) => {
-    try {
-      await financialService.update(updatedEntry.id, {
-        description: updatedEntry.description,
-        amount: updatedEntry.amount,
-        category: updatedEntry.category,
-        subcategory: updatedEntry.subcategory,
-        payment_method: updatedEntry.payment_method,
-        date: updatedEntry.date,
-        time: updatedEntry.time,
-        observations: updatedEntry.observations
-      });
-      
-      toast({
-        title: "Lançamento atualizado!",
-        description: "Os dados foram salvos com sucesso.",
-      });
-      
-      loadFinancialData(); // Reload data
-    } catch (error) {
-      console.error('Error updating entry:', error);
-      toast({
-        title: "Erro ao atualizar",
-        description: "Não foi possível salvar as alterações.",
-        variant: "destructive"
-      });
+  const handleSaveEntry = (updatedEntry: FinanceEntry) => {
+    if (updatedEntry.tipo === "entrada") {
+      setEntradas(prev => prev.map(e => e.id === updatedEntry.id ? updatedEntry : e));
+    } else {
+      setSaidas(prev => prev.map(s => s.id === updatedEntry.id ? updatedEntry : s));
     }
   };
 
-  const handleDeleteEntry = async (entry: FinancialEntry) => {
-    try {
-      await financialService.delete(entry.id);
-      
-      toast({
-        title: "Lançamento excluído!",
-        description: `${entry.type === "income" ? "Entrada" : "Saída"} foi removida com sucesso.`,
-      });
-      
-      loadFinancialData(); // Reload data
-    } catch (error) {
-      console.error('Error deleting entry:', error);
-      toast({
-        title: "Erro ao excluir",
-        description: "Não foi possível excluir o lançamento.",
-        variant: "destructive"
-      });
+  const handleDeleteEntry = (entry: FinanceEntry) => {
+    if (entry.tipo === "entrada") {
+      setEntradas(prev => prev.filter(e => e.id !== entry.id));
+    } else {
+      setSaidas(prev => prev.filter(s => s.id !== entry.id));
     }
+    
+    toast({
+      title: "Lançamento excluído!",
+      description: `${entry.tipo === "entrada" ? "Entrada" : "Saída"} foi removida com sucesso.`,
+    });
   };
-
-  const handleFinanceModalSuccess = () => {
-    loadFinancialData(); // Reload data after adding new entry
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -159,8 +97,8 @@ const Financeiro = () => {
 
       {/* Gráfico Financeiro */}
       <FinancialChart 
-        entradas={incomeEntries.map(e => ({ data: e.date, valor: Number(e.amount) }))}
-        saidas={expenseEntries.map(s => ({ data: s.date, valor: Number(s.amount) }))}
+        entradas={entradas.map(e => ({ data: e.data, valor: e.valor }))}
+        saidas={saidas.map(s => ({ data: s.data, valor: s.valor }))}
       />
 
       {/* Cards de Resumo */}
@@ -172,7 +110,7 @@ const Financeiro = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              R$ {summary.totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {totalEntradas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground">Este mês</p>
           </CardContent>
@@ -185,7 +123,7 @@ const Financeiro = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              R$ {summary.totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {totalSaidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground">Este mês</p>
           </CardContent>
@@ -194,14 +132,14 @@ const Financeiro = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Saldo Mensal</CardTitle>
-            <DollarSign className={`h-4 w-4 ${summary.balance >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+            <DollarSign className={`h-4 w-4 ${saldoMensal >= 0 ? 'text-green-600' : 'text-red-600'}`} />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              R$ {summary.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            <div className={`text-2xl font-bold ${saldoMensal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              R$ {saldoMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-muted-foreground">
-              {summary.balance >= 0 ? 'Lucro' : 'Prejuízo'} atual
+              {saldoMensal >= 0 ? 'Lucro' : 'Prejuízo'} atual
             </p>
           </CardContent>
         </Card>
@@ -297,7 +235,7 @@ const Financeiro = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {incomeEntries.map((entrada) => (
+                {entradas.map((entrada) => (
                   <div 
                     key={entrada.id} 
                     className="flex items-center justify-between p-4 border rounded-lg"
@@ -306,19 +244,19 @@ const Financeiro = () => {
                       <div className="text-center">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <div className="text-xs text-muted-foreground mt-1">
-                          {new Date(entrada.date).toLocaleDateString('pt-BR')}
+                          {new Date(entrada.data).toLocaleDateString('pt-BR')}
                         </div>
                       </div>
                       <div>
-                        <h4 className="font-semibold">{entrada.description}</h4>
-                        <p className="text-sm text-muted-foreground">{CATEGORY_LABELS[entrada.category] || entrada.category}</p>
+                        <h4 className="font-semibold">{entrada.cliente}</h4>
+                        <p className="text-sm text-muted-foreground">{entrada.servico}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
-                      <Badge variant="outline">{PAYMENT_METHOD_LABELS[entrada.payment_method] || entrada.payment_method}</Badge>
+                      <Badge variant="outline">{entrada.formaPagamento}</Badge>
                       <div className="text-right">
                         <div className="text-lg font-bold text-green-600">
-                          R$ {Number(entrada.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {entrada.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </div>
                       </div>
                       <div className="flex space-x-2">
@@ -420,7 +358,7 @@ const Financeiro = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {expenseEntries.map((saida) => (
+                {saidas.map((saida) => (
                   <div 
                     key={saida.id} 
                     className="flex items-center justify-between p-4 border rounded-lg"
@@ -429,18 +367,18 @@ const Financeiro = () => {
                       <div className="text-center">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <div className="text-xs text-muted-foreground mt-1">
-                          {new Date(saida.date).toLocaleDateString('pt-BR')}
+                          {new Date(saida.data).toLocaleDateString('pt-BR')}
                         </div>
                       </div>
                       <div>
-                        <h4 className="font-semibold">{saida.description}</h4>
-                        <p className="text-sm text-muted-foreground">{CATEGORY_LABELS[saida.category] || saida.category}</p>
+                        <h4 className="font-semibold">{saida.descricao}</h4>
+                        <p className="text-sm text-muted-foreground">{saida.tipo}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="text-right">
                         <div className="text-lg font-bold text-red-600">
-                          R$ {Number(saida.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {saida.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </div>
                       </div>
                       <div className="flex space-x-2">
@@ -472,14 +410,13 @@ const Financeiro = () => {
         open={showFinanceModal} 
         onClose={() => setShowFinanceModal(false)}
         type={modalType}
-        onSuccess={handleFinanceModalSuccess}
       />
       
       <EditFinanceModal
         open={showEditModal}
         onClose={() => setShowEditModal(false)}
-        entry={editingEntry as any}
-        onSave={handleSaveEntry as any}
+        entry={editingEntry}
+        onSave={handleSaveEntry}
       />
     </div>
   );
