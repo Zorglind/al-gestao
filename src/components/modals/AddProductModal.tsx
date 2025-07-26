@@ -7,15 +7,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useDropzone } from "react-dropzone";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Loader2 } from "lucide-react";
+import { productsService } from "@/services/productsService";
+import { useFileValidation } from "@/hooks/useFileValidation";
 
 interface AddProductModalProps {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function AddProductModal({ open, onClose }: AddProductModalProps) {
+export function AddProductModal({ open, onClose, onSuccess }: AddProductModalProps) {
   const { toast } = useToast();
+  const { validateFile } = useFileValidation();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     categoria: "",
     fabricante: "",
@@ -27,12 +32,24 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
   });
 
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
+      const isValid = await validateFile(file, 'image');
+      if (!isValid) {
+        toast({
+          title: "Erro no arquivo",
+          description: "Formato de arquivo inválido ou muito grande",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const imageUrl = URL.createObjectURL(file);
       setUploadedImage(imageUrl);
+      setUploadedFile(file);
       setFormData(prev => ({ ...prev, foto: imageUrl }));
       
       toast({
@@ -40,7 +57,7 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
         description: "Imagem do produto adicionada com sucesso.",
       });
     }
-  }, [toast]);
+  }, [toast, validateFile]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -52,6 +69,7 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
 
   const removeImage = () => {
     setUploadedImage(null);
+    setUploadedFile(null);
     setFormData(prev => ({ ...prev, foto: "" }));
   };
 
@@ -74,27 +92,59 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
     "Paul Mitchell"
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Produto adicionado:", formData);
-    
-    toast({
-      title: "Produto adicionado!",
-      description: `${formData.nome} foi cadastrado com sucesso.`,
-    });
-    
-    setFormData({
-      categoria: "",
-      fabricante: "",
-      nome: "",
-      codigoBarras: "",
-      valorVenda: "",
-      informacoesAdicionais: "",
-      foto: ""
-    });
-    setUploadedImage(null);
-    
-    onClose();
+    setIsLoading(true);
+
+    try {
+      let imageUrl = formData.foto;
+
+      // Upload image if file was selected
+      if (uploadedFile) {
+        imageUrl = await productsService.uploadImage(uploadedFile);
+      }
+
+      await productsService.create({
+        name: formData.nome,
+        category: formData.categoria,
+        brand: formData.fabricante || undefined,
+        description: formData.informacoesAdicionais || undefined,
+        barcode: formData.codigoBarras || undefined,
+        price: parseFloat(formData.valorVenda),
+        image_url: imageUrl || undefined,
+        stock_quantity: 0
+      });
+
+      toast({
+        title: "Produto adicionado!",
+        description: `${formData.nome} foi cadastrado com sucesso.`,
+      });
+      
+      // Reset form
+      setFormData({
+        categoria: "",
+        fabricante: "",
+        nome: "",
+        codigoBarras: "",
+        valorVenda: "",
+        informacoesAdicionais: "",
+        foto: ""
+      });
+      setUploadedImage(null);
+      setUploadedFile(null);
+      
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      console.error('Error creating product:', error);
+      toast({
+        title: "Erro ao criar produto",
+        description: "Ocorreu um erro ao cadastrar o produto. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -240,11 +290,18 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Adicionar Produto
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Criando...
+                </>
+              ) : (
+                'Adicionar Produto'
+              )}
             </Button>
           </div>
         </form>
