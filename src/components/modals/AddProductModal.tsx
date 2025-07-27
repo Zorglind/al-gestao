@@ -28,7 +28,7 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
 
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
       const imageUrl = URL.createObjectURL(file);
