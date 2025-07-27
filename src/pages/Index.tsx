@@ -24,6 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
   const { user, profile, logout, isAuthenticated, loading } = useAuth();
+  const isMobile = useIsMobile(); // Mover para o topo para evitar chamada condicional
 
   const handleLogout = () => {
     logout();
@@ -43,8 +44,6 @@ const Index = () => {
   if (!isAuthenticated || !user || !profile) {
     return <LoginPage />;
   }
-
-  const isMobile = useIsMobile();
 
   return (
     <NotificationProvider>

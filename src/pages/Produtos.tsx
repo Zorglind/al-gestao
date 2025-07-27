@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Package, Plus, Search, Tag, Package2, Trash2 } from "lucide-react";
+import { Package, Plus, Search, Tag, Package2, Trash2, Loader2 } from "lucide-react";
 import { AddProductModal } from "@/components/modals/AddProductModal";
 import { EditProductModal } from "@/components/modals/EditProductModal";
 import {
@@ -18,76 +18,71 @@ import {
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-
-interface Produto {
-  id: number;
-  nome: string;
-  categoria: string;
-  estoque: number;
-  descricao: string;
-  foto: string;
-}
+import { productsService, type Product } from "@/services/productsService";
 
 const Produtos = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [showEditProductModal, setShowEditProductModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Produto | null>(null);
-  const [produtos, setProdutos] = useState<Produto[]>([
-    {
-      id: 1,
-      nome: "Shampoo Hidratante Natural",
-      categoria: "Shampoo",
-      estoque: 25,
-      descricao: "Shampoo com ingredientes naturais para hidratação profunda",
-      foto: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=300&h=300&fit=crop"
-    },
-    {
-      id: 2,
-      nome: "Condicionador Nutritivo",
-      categoria: "Condicionador",
-      estoque: 18,
-      descricao: "Condicionador rico em nutrientes para cabelos cacheados",
-      foto: "https://images.unsplash.com/photo-1571875257727-256c39da42af?w=300&h=300&fit=crop"
-    },
-    {
-      id: 3,
-      nome: "Máscara Reparadora",
-      categoria: "Tratamento",
-      estoque: 12,
-      descricao: "Máscara intensiva para reparação de cabelos danificados",
-      foto: "https://images.unsplash.com/photo-1599351431613-67b97376e40d?w=300&h=300&fit=crop"
-    },
-    {
-      id: 4,
-      nome: "Óleo Capilar Multifuncional",
-      categoria: "Finalizador",
-      estoque: 8,
-      descricao: "Óleo vegetal para nutrição e brilho",
-      foto: "https://images.unsplash.com/photo-1570554886111-e80fcca6a029?w=300&h=300&fit=crop"
-    },
-    {
-      id: 5,
-      nome: "Leave-in Protetor",
-      categoria: "Finalizador",
-      estoque: 30,
-      descricao: "Leave-in com proteção térmica e anti-frizz",
-      foto: "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=300&h=300&fit=crop"
-    },
-  ]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [produtos, setProdutos] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleDeleteProduct = (productId: number) => {
-    setProdutos((produtosAtuais) => produtosAtuais.filter(produto => produto.id !== productId));
-    toast({
-      title: "Produto excluído",
-      description: "O produto foi removido do catálogo.",
-    });
+  // Carregar produtos do banco de dados
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      setIsLoading(true);
+      const data = await productsService.getAll();
+      setProdutos(data);
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+      toast({
+        title: "Erro ao carregar produtos",
+        description: "Não foi possível carregar a lista de produtos.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      await productsService.delete(productId);
+      await loadProducts(); // Recarregar lista
+      toast({
+        title: "Produto excluído",
+        description: "O produto foi removido do catálogo.",
+      });
+    } catch (error) {
+      console.error('Erro ao excluir produto:', error);
+      toast({
+        title: "Erro ao excluir produto",
+        description: "Não foi possível excluir o produto.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleProductAdded = () => {
+    loadProducts(); // Recarregar lista quando produto for adicionado
+    setShowAddProductModal(false);
+  };
+
+  const handleProductUpdated = () => {
+    loadProducts(); // Recarregar lista quando produto for editado
+    setShowEditProductModal(false);
+    setSelectedProduct(null);
   };
 
   const filteredProdutos = produtos.filter(produto =>
-    produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    produto.categoria?.toLowerCase().includes(searchTerm.toLowerCase())
+    produto.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    produto.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getCategoriaColor = (categoria: string) => {
@@ -113,8 +108,28 @@ const Produtos = () => {
   };
 
   const totalProdutos = produtos.length;
-  const produtosBaixoEstoque = produtos.filter(p => p.estoque <= 5).length;
-  const estoqueTotal = produtos.reduce((acc, p) => acc + p.estoque, 0);
+  const produtosBaixoEstoque = produtos.filter(p => (p.stock_quantity || 0) <= 5).length;
+  const estoqueTotal = produtos.reduce((acc, p) => acc + (p.stock_quantity || 0), 0);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-primary">Produtos</h1>
+            <p className="text-muted-foreground">Catálogo de produtos Sol Lima</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Carregando produtos...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -179,13 +194,16 @@ const Produtos = () => {
           <Card key={produto.id} className="hover:shadow-lg transition-shadow overflow-hidden">
             <div className="aspect-square bg-gray-100 relative">
               <img 
-                src={produto.foto} 
-                alt={produto.nome}
+                src={produto.image_url || '/placeholder.svg'} 
+                alt={produto.name}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = '/placeholder.svg';
+                }}
               />
               <div className="absolute top-2 right-2">
-                <Badge className={getEstoqueColor(produto.estoque)}>
-                  {getEstoqueStatus(produto.estoque)}
+                <Badge className={getEstoqueColor(produto.stock_quantity || 0)}>
+                  {getEstoqueStatus(produto.stock_quantity || 0)}
                 </Badge>
               </div>
             </div>
@@ -193,19 +211,19 @@ const Produtos = () => {
             <CardContent className="p-4">
               <div className="space-y-3">
                 <div>
-                  <h3 className="font-semibold text-lg">{produto.nome}</h3>
-                  <p className="text-sm text-muted-foreground">{produto.descricao}</p>
+                  <h3 className="font-semibold text-lg">{produto.name}</h3>
+                  <p className="text-sm text-muted-foreground">{produto.description}</p>
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <Badge className={getCategoriaColor(produto.categoria)}>
+                  <Badge className={getCategoriaColor(produto.category)}>
                     <Tag className="h-3 w-3 mr-1" />
-                    {produto.categoria}
+                    {produto.category}
                   </Badge>
                   
                   <div className="flex items-center gap-1 text-sm">
                     <Package2 className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{produto.estoque}</span>
+                    <span className="font-medium">{produto.stock_quantity || 0}</span>
                     <span className="text-muted-foreground">unidades</span>
                   </div>
                 </div>
@@ -227,7 +245,7 @@ const Produtos = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Excluir Produto</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Tem certeza que deseja excluir "{produto.nome}"? Esta ação não poderá ser desfeita.
+                          Tem certeza que deseja excluir "{produto.name}"? Esta ação não poderá ser desfeita.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -256,7 +274,8 @@ const Produtos = () => {
 
       <AddProductModal 
         open={showAddProductModal} 
-        onClose={() => setShowAddProductModal(false)} 
+        onClose={() => setShowAddProductModal(false)}
+        onSuccess={handleProductAdded}
       />
       
       <EditProductModal 
@@ -266,6 +285,7 @@ const Produtos = () => {
           setSelectedProduct(null);
         }}
         product={selectedProduct}
+        onSuccess={handleProductUpdated}
       />
     </div>
   );

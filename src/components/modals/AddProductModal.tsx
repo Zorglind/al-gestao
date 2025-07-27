@@ -12,9 +12,10 @@ import { Upload, X } from "lucide-react";
 interface AddProductModalProps {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function AddProductModal({ open, onClose }: AddProductModalProps) {
+export function AddProductModal({ open, onClose, onSuccess }: AddProductModalProps) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     categoria: "",
@@ -23,10 +24,12 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
     codigoBarras: "",
     valorVenda: "",
     informacoesAdicionais: "",
-    foto: ""
+    foto: "",
+    estoque: ""
   });
 
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -74,27 +77,64 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
     "Paul Mitchell"
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Produto adicionado:", formData);
     
-    toast({
-      title: "Produto adicionado!",
-      description: `${formData.nome} foi cadastrado com sucesso.`,
-    });
-    
-    setFormData({
-      categoria: "",
-      fabricante: "",
-      nome: "",
-      codigoBarras: "",
-      valorVenda: "",
-      informacoesAdicionais: "",
-      foto: ""
-    });
-    setUploadedImage(null);
-    
-    onClose();
+    if (!formData.nome || !formData.categoria || !formData.valorVenda) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      const { productsService } = await import("@/services/productsService");
+      
+      await productsService.create({
+        name: formData.nome,
+        category: formData.categoria,
+        brand: formData.fabricante,
+        description: formData.informacoesAdicionais,
+        price: parseFloat(formData.valorVenda),
+        stock_quantity: parseInt(formData.estoque) || 0,
+        barcode: formData.codigoBarras,
+        image_url: formData.foto
+      });
+
+      toast({
+        title: "Produto adicionado!",
+        description: `${formData.nome} foi cadastrado com sucesso.`,
+      });
+
+      // Reset form
+      setFormData({
+        categoria: "",
+        fabricante: "",
+        nome: "",
+        codigoBarras: "",
+        valorVenda: "",
+        informacoesAdicionais: "",
+        foto: "",
+        estoque: ""
+      });
+      setUploadedImage(null);
+      
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      console.error('Erro ao criar produto:', error);
+      toast({
+        title: "Erro ao adicionar produto",
+        description: "Não foi possível adicionar o produto.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -121,7 +161,7 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="fabricante">Fabricante *</Label>
+              <Label htmlFor="fabricante">Fabricante</Label>
               <Select value={formData.fabricante} onValueChange={(value) => setFormData({...formData, fabricante: value})}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o fabricante" />
@@ -167,6 +207,17 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="estoque">Estoque Inicial</Label>
+            <Input
+              id="estoque"
+              type="number"
+              value={formData.estoque}
+              onChange={(e) => setFormData({...formData, estoque: e.target.value})}
+              placeholder="0"
+            />
           </div>
 
           <div className="space-y-2">
@@ -243,8 +294,8 @@ export function AddProductModal({ open, onClose }: AddProductModalProps) {
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Adicionar Produto
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Adicionando..." : "Adicionar Produto"}
             </Button>
           </div>
         </form>

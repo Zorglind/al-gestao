@@ -9,33 +9,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDropzone } from "react-dropzone";
 import { Upload, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Product {
-  id: number;
-  nome: string;
-  categoria: string;
-  estoque: number;
-  descricao: string;
-  foto: string;
-}
+import { productsService, type Product } from "@/services/productsService";
 
 interface EditProductModalProps {
   open: boolean;
   onClose: () => void;
   product: Product | null;
+  onSuccess?: () => void;
 }
 
-export function EditProductModal({ open, onClose, product }: EditProductModalProps) {
+export function EditProductModal({ open, onClose, product, onSuccess }: EditProductModalProps) {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     nome: "",
     categoria: "",
     descricao: "",
     estoque: "",
-    foto: ""
+    foto: "",
+    preco: ""
   });
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categorias = [
     "Shampoo",
@@ -48,13 +43,14 @@ export function EditProductModal({ open, onClose, product }: EditProductModalPro
   useEffect(() => {
     if (product) {
       setFormData({
-        nome: product.nome,
-        categoria: product.categoria,
-        descricao: product.descricao,
-        estoque: product.estoque.toString(),
-        foto: product.foto
+        nome: product.name,
+        categoria: product.category,
+        descricao: product.description || "",
+        estoque: (product.stock_quantity || 0).toString(),
+        foto: product.image_url || "",
+        preco: product.price.toString()
       });
-      setPreviewUrl(product.foto);
+      setPreviewUrl(product.image_url || "");
       setUploadedFile(null);
     }
   }, [product]);
@@ -77,16 +73,40 @@ export function EditProductModal({ open, onClose, product }: EditProductModalPro
     maxFiles: 1
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Produto editado:", formData);
     
-    toast({
-      title: "Produto atualizado!",
-      description: `${formData.nome} foi atualizado com sucesso.`,
-    });
-    
-    onClose();
+    if (!product) return;
+
+    try {
+      setIsSubmitting(true);
+      
+      await productsService.update(product.id, {
+        name: formData.nome,
+        category: formData.categoria,
+        description: formData.descricao,
+        stock_quantity: parseInt(formData.estoque) || 0,
+        image_url: formData.foto,
+        price: parseFloat(formData.preco)
+      });
+
+      toast({
+        title: "Produto atualizado!",
+        description: `${formData.nome} foi atualizado com sucesso.`,
+      });
+
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      console.error('Erro ao atualizar produto:', error);
+      toast({
+        title: "Erro ao atualizar produto",
+        description: "Não foi possível atualizar o produto.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!product) return null;
@@ -133,15 +153,28 @@ export function EditProductModal({ open, onClose, product }: EditProductModalPro
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="estoque">Estoque</Label>
-            <Input
-              id="estoque"
-              type="number"
-              value={formData.estoque}
-              onChange={(e) => setFormData({...formData, estoque: e.target.value})}
-              required
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="estoque">Estoque</Label>
+              <Input
+                id="estoque"
+                type="number"
+                value={formData.estoque}
+                onChange={(e) => setFormData({...formData, estoque: e.target.value})}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="preco">Preço (R$) *</Label>
+              <Input
+                id="preco"
+                type="number"
+                step="0.01"
+                value={formData.preco}
+                onChange={(e) => setFormData({...formData, preco: e.target.value})}
+                required
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -205,8 +238,8 @@ export function EditProductModal({ open, onClose, product }: EditProductModalPro
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Salvar Alterações
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </div>
         </form>
